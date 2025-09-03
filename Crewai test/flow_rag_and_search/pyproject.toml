@@ -1,0 +1,22 @@
+[project]
+name = "flow_rag_and_dgg_websearch"
+version = "0.1.0"
+description = "flow_rag_and_dgg_websearch using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]>=0.165.1,<1.0.0",
+    "faiss-cpu>=1.12.0",
+]
+
+[project.scripts]
+kickoff = "flow_rag_and_dgg_websearch.main:kickoff"
+run_crew = "flow_rag_and_dgg_websearch.main:kickoff"
+plot = "flow_rag_and_dgg_websearch.main:plot"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "flow"

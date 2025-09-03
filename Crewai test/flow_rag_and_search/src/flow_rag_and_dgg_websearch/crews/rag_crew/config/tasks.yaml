@@ -1,0 +1,8 @@
+rag_task:
+  variables: ["query"]
+  description: >
+    Rispondi alla seguente richiesta dello user basandoti sui documenti disponibili nella knowledge base: "{{query}}".
+    Recupera i contenuti più rilevanti tramite il tool di RAG e sintetizza quelli che ritieni essere inerenti alla query dello user nella risposta.
+  expected_output: >
+    Una risposta chiara e sintetica, basata sui documenti recuperati.
+  agent: rag_agent

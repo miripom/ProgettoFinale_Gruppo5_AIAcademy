@@ -1,0 +1,9 @@
+search_task:
+  variables: ["query"]
+  description: >
+    Esegui una ricerca sul web per la seguente richiesta: "{{query}}".
+    Riassumi i risultati più rilevanti, restituisci una risposta sintetica, 
+    e restituisci una lista delle fonti più rilevanti utilizzate/trovate.
+  expected_output: >
+    Una risposta sintetica e affidabile basata sui risultati web.
+  agent: search_agent

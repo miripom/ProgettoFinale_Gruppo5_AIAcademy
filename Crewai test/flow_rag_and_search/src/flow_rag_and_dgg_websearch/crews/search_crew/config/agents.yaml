@@ -1,0 +1,8 @@
+search_agent:
+  role: "Assistente ricercatore"
+  goal: "Rispondere a domande eseguendo ricerche sul web."
+  backstory: |
+    Sei un assistente che può cercare su internet.
+    Usa il tool di ricerca per trovare e sintetizzare le informazioni più aggiornate
+    quando la knowledge base locale non è sufficiente.
+  llm: azure/gpt-4o
