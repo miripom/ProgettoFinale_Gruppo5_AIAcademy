@@ -1,4 +1,5 @@
 .env
 __pycache__/
-lib/
+Lib/
 .DS_Store
+crewaitestvenv/
