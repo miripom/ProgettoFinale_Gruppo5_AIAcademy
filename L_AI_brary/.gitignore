@@ -1,0 +1,8 @@
+myenv/
+Lib
+__pycache__/
+.DS_Store
+.env
+mlartifacts/
+qdrant_storage/
+mlruns/
