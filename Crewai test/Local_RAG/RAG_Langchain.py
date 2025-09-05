@@ -1,7 +1,6 @@
 import os
 import getpass
 from dotenv import load_dotenv
-from openai import AzureOpenAI
 from langchain.chat_models import init_chat_model
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -16,11 +15,10 @@ from langchain_community.document_loaders import TextLoader
 
 client = QdrantClient(host="localhost", port=6333)
 
-
+env_path = "C:\\Users\\VW778XM\\OneDrive - EY\\Documents\\GitHub\\ProgettoFinale_Gruppo5_AIAcademy\\Crewai test\\.env"
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 CURRENT_DIRECTORY_PATH = os.path.dirname(CURRENT_FILE_PATH)
-DOTENV_PATH = "C:/Users/LH668YN/OneDrive - EY/Desktop/CrewAI/3_Flow_Rag_and_DDG_WebSearch/flow_rag_and_dgg_websearch/.env"
-load_dotenv(DOTENV_PATH)
+load_dotenv(env_path)
 
 faiss_0__or__qdrant_1 = int(os.environ["FAISS_0__OR__QDRANT_1"])
 

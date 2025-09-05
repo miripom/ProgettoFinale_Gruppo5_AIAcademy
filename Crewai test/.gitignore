@@ -3,3 +3,7 @@ Lib/
 .DS_Store
 .venv/
 .env
+mlartifacts/
+qdrant_storage/
+mlruns/
+Crewai test/flow_rag_and_search/mlflow.db
