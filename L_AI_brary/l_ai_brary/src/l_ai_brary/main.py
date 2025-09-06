@@ -5,48 +5,42 @@ from pydantic import BaseModel
 
 from crewai.flow import Flow, listen, start
 
-from l_ai_brary.crews.poem_crew.poem_crew import PoemCrew
+from l_ai_brary.crews.pdf_crew.pdf_crew import PdfCrew
 
 
-class PoemState(BaseModel):
-    sentence_count: int = 1
-    poem: str = ""
+class ChatState(BaseModel):
+    chat_history: list[dict] = []
+    messages_count: int = 0
+    user_quit: bool = False
 
 
-class PoemFlow(Flow[PoemState]):
+class ChatbotFlow(Flow[ChatState]):
 
     @start()
-    def generate_sentence_count(self):
-        print("Generating sentence count")
-        self.state.sentence_count = randint(1, 5)
+    def take_user_input(self, user_input: str | None = None):
+        if self.state.user_quit:
+            return None
+        
+        if user_input:
+            # Append user message
+            self.state.chat_history.append({"role": "user", "content": user_input})
+            self.state.messages_count += 1
 
-    @listen(generate_sentence_count)
-    def generate_poem(self):
-        print("Generating poem")
-        result = (
-            PoemCrew()
-            .crew()
-            .kickoff(inputs={"sentence_count": self.state.sentence_count})
-        )
-
-        print("Poem generated", result.raw)
-        self.state.poem = result.raw
-
-    @listen(generate_poem)
-    def save_poem(self):
-        print("Saving poem")
-        with open("poem.txt", "w") as f:
-            f.write(self.state.poem)
+            # Dummy assistant response (replace with crew orchestration)
+            assistant_response = f"Echo: {user_input}"
+            self.state.chat_history.append({"role": "assistant", "content": assistant_response})
+        
+        return self.state
 
 
 def kickoff():
-    poem_flow = PoemFlow()
-    poem_flow.kickoff()
+    chatbot_flow = ChatbotFlow()
+    chatbot_flow.kickoff()
 
 
 def plot():
-    poem_flow = PoemFlow()
-    poem_flow.plot()
+    chatbot_flow = ChatbotFlow()
+    chatbot_flow.plot()
 
 
 if __name__ == "__main__":
