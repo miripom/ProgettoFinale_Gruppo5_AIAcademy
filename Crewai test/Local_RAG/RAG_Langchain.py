@@ -19,20 +19,30 @@ client = QdrantClient(host="localhost", port=6333)
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 CURRENT_DIRECTORY_PATH = os.path.dirname(CURRENT_FILE_PATH)
-DOTENV_PATH = "C:/Users/LH668YN/OneDrive - EY/Desktop/CrewAI/3_Flow_Rag_and_DDG_WebSearch/flow_rag_and_dgg_websearch/.env"
+DOTENV_PATH = "C:\\Users\\LH668YN\\OneDrive - EY\\Desktop\\ProgettoFinale_Gruppo5_AIAcademy\\Crewai test\\flow_rag_and_search\\.env"
 load_dotenv(DOTENV_PATH)
 
 faiss_0__or__qdrant_1 = int(os.environ["FAISS_0__OR__QDRANT_1"])
 
 azure_openai_key = os.getenv("AZURE_API_KEY") or ""
-azure_openai_endpoint = os.getenv("AZURE_API_BASE") or ""
+azure_openai_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT") or ""
 api_version = os.getenv("AZURE_API_VERSION") or ""
 
 deployment_embedding = os.getenv("DEPLOYMENT_EMBEDDING") or ""
 
 
 # Modello embedding
-embeddings = AzureOpenAIEmbeddings(model="text-embedding-ada-002")
+saved_base = os.environ.get("AZURE_OPENAI_ENDPOINT")
+if saved_base:
+    del os.environ["AZURE_OPENAI_ENDPOINT"]
+embeddings = AzureOpenAIEmbeddings(
+    model="text-embedding-ada-002",
+    azure_deployment=os.environ["DEPLOYMENT_EMBEDDING"],
+    azure_endpoint=saved_base,
+    api_version=os.environ["OPENAI_API_VERSION"],
+)
+if saved_base:
+    os.environ["AZURE_OPENAI_ENDPOINT"] = saved_base
 
 loader = TextLoader(f"{CURRENT_DIRECTORY_PATH}/knowledge_base/rispostesbagliate.md", encoding="utf-8")
 docs = loader.load()
@@ -76,3 +86,12 @@ elif faiss_0__or__qdrant_1 == 1:
 
 print(f"Loaded {len(split_doc)} chunks into the vector_store.")
 
+
+# Open Docker Desktop
+
+# Pull qdrant image
+# docker pull qdrant/qdrant
+
+# Avvia prima Qdrant con Docker:
+# docker run -d -p 6333:6333 -p 6334:6334 -v "$(pwd)/qdrant_storage:/qdrant/storage:z" qdrant/qdrant
+# http://localhost:6333/dashboard

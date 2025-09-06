@@ -2,8 +2,19 @@ search_task:
   variables: ["query"]
   description: >
     Esegui una ricerca sul web per la seguente richiesta: "{{query}}".
-    Riassumi i risultati più rilevanti, restituisci una risposta sintetica, 
-    e restituisci una lista delle fonti più rilevanti utilizzate/trovate.
+    Fornisci una risposta sintetica e chiara organizzata come segue:
+
+      1. Corpo principale:
+         - Riassumi i risultati più rilevanti in modo accurato e conciso.
+         - Elenca sempre le fonti in fondo al corpo principale, in formato lista con link cliccabili.
+         - Se non trovi informazioni rilevanti, dichiaralo esplicitamente.
+
+      2. Sezione finale separata intitolata “Valutazione della risposta”:
+         - Inserisci il riassunto in linguaggio naturale della valutazione ricevuta dal tool Patronus.
+         - Aggiungi una lista con i valori numerici e le metriche principali fornite dal tool.
+
+    Non selezionare manualmente i criteri di valutazione: lascia che sia Patronus a determinarli in base al contesto.
   expected_output: >
-    Una risposta sintetica e affidabile basata sui risultati web.
+    Una risposta sintetica e affidabile basata sui risultati web, seguita da una sezione “Valutazione della risposta”
+    che riassume e mostra le metriche di performance fornite dal tool Patronus.
   agent: search_agent

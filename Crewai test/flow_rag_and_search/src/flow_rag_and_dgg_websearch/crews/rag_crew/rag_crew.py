@@ -4,6 +4,8 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
 
 from flow_rag_and_dgg_websearch.tools.RAG_tool import RagTool
+from crewai_tools import PatronusEvalTool
+
 
 @CrewBase
 class RagCrew:
@@ -16,7 +18,7 @@ class RagCrew:
     def rag_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["rag_agent"],  # type: ignore
-            tools=[RagTool]   # tool generico per interrogare il RAG
+            tools=[RagTool, PatronusEvalTool()]
         )
 
     @task

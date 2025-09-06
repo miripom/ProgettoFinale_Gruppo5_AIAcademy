@@ -1,0 +1,5 @@
+.env_for_copies
+Crewai test/flow_rag_and_search/mlflow.db
+mlartifacts/
+qdrant_storage/
+mlruns/

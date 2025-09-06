@@ -6,7 +6,11 @@ authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "crewai[tools]>=0.165.1,<1.0.0",
+    "datasets>=4.0.0",
+    "evaluate>=0.4.5",
     "faiss-cpu>=1.12.0",
+    "mlflow>=3.3.2",
+    "transformers>=4.46.3",
 ]
 
 [project.scripts]

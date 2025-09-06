@@ -4,6 +4,8 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
 
 from crewai_tools import SerperDevTool
+from crewai_tools import PatronusEvalTool
+
 
 @CrewBase
 class SearchCrew:
@@ -16,7 +18,7 @@ class SearchCrew:
     def search_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["search_agent"],  # type: ignore
-            tools=[SerperDevTool()]
+            tools=[SerperDevTool(), PatronusEvalTool()]
         )
 
     @task

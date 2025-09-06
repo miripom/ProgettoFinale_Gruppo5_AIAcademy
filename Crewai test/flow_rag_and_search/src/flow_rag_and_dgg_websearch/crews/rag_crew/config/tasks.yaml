@@ -2,7 +2,22 @@ rag_task:
   variables: ["query"]
   description: >
     Rispondi alla seguente richiesta dello user basandoti sui documenti disponibili nella knowledge base: "{{query}}".
-    Recupera i contenuti più rilevanti tramite il tool di RAG e sintetizza quelli che ritieni essere inerenti alla query dello user nella risposta.
+    
+    La tua risposta deve seguire questa struttura:
+
+      1. Corpo principale:
+         - Recupera i contenuti più rilevanti tramite il tool di RAG.
+         - Sintetizza le informazioni pertinenti in una risposta chiara e concisa.
+         - Riporta le fonti o i riferimenti ai documenti in fondo al corpo principale.
+         - Se non trovi informazioni utili, dichiara esplicitamente che la knowledge base non contiene contenuti rilevanti.
+
+      2. Sezione finale intitolata “Valutazione della risposta”:
+         - Riassunto in linguaggio naturale del giudizio fornito dal tool Patronus.
+         - Lista con valori numerici e metriche principali restituite dal tool.
+
+    Non selezionare manualmente i criteri di valutazione: lascia che sia Patronus a determinarli in base al contesto.
   expected_output: >
-    Una risposta chiara e sintetica, basata sui documenti recuperati.
+    Una risposta sintetica e affidabile basata sui documenti del RAG,
+    seguita da una sezione “Valutazione della risposta” che riassume e mostra
+    le metriche di performance fornite dal tool Patronus.
   agent: rag_agent

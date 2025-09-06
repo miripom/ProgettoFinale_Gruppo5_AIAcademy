@@ -19,7 +19,17 @@ def RagTool(query: str, k: int = 3) -> str:
     """
     try:
         docs = []
-        embeddings = AzureOpenAIEmbeddings(model="text-embedding-ada-002")
+        saved_base = os.environ.get("AZURE_OPENAI_ENDPOINT")
+        if saved_base:
+            del os.environ["AZURE_OPENAI_ENDPOINT"]
+        embeddings = AzureOpenAIEmbeddings(
+            model="text-embedding-ada-002",
+            azure_deployment=os.environ["DEPLOYMENT_EMBEDDING"],
+            azure_endpoint=saved_base,
+            api_version=os.environ["OPENAI_API_VERSION"],
+            )
+        if saved_base:
+            os.environ["AZURE_OPENAI_ENDPOINT"] = saved_base
 
         
         faiss_0__or__qdrant_1 = int(os.environ["FAISS_0__OR__QDRANT_1"])
