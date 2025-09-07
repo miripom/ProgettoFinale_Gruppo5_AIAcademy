@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 import streamlit as st
 
 from src.l_ai_brary.main import ChatbotFlow
+from utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
 
 FILE_PATH = os.path.abspath(__file__)       # streamlit_frontend/app.py
 FOLDER_PATH = os.path.dirname(FILE_PATH)    # streamlit_frontend
@@ -9,6 +11,7 @@ FOLDER_PATH = os.path.dirname(FILE_PATH)    # streamlit_frontend
 # -----------------------------
 # Streamlit UI
 # To run the app, navigate to the l_ai_brary directory and run:
+
 # python -m streamlit run streamlit_frontend/app.py
 # -----------------------------
 
@@ -35,17 +38,52 @@ if not flow.state.user_quit:
         flow.state.user_quit = True
         st.rerun()  # refresh UI immediately
 
-# PDF uploader in sidebar
+# -----------------------------
+# PDF upload and indexing
+# -----------------------------
+if "indexing_in_progress" not in st.session_state:
+    st.session_state.indexing_in_progress = False
+if "indexed_files" not in st.session_state:
+    st.session_state.indexed_files = set()
+
 uploaded_file = st.sidebar.file_uploader("Upload a PDF", type=["pdf"])
-if uploaded_file:
-    knowledge_base_dir = os.path.join(FOLDER_PATH, "../knowledge_base")
-    os.makedirs(knowledge_base_dir, exist_ok=True)
-    pdf_path = os.path.join(knowledge_base_dir, uploaded_file.name)
+
+if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
+    st.session_state.indexed_files.add(uploaded_file.name)
+    st.session_state.indexing_in_progress = True
+    knowledge_base_dir = Path(FOLDER_PATH) / "../knowledge_base"
+    knowledge_base_dir.mkdir(parents=True, exist_ok=True)
+    pdf_path = knowledge_base_dir / uploaded_file.name
 
     with open(pdf_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    st.sidebar.success(f"✅ {uploaded_file.name} saved to knowledge_base")
+    st.sidebar.success(f"✅ {uploaded_file.name} saved to knowledge_base.")
+
+    flow.state.chat_history.append(
+        {"role": "assistant", "content": f"Analyzing the loaded PDF **{uploaded_file.name}**... ⏳"}
+    )
+
+    # Run indexing
+    with st.spinner("Indexing PDF in Qdrant..."):
+        try:
+            rag_settings = RAG_Settings()
+            index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings)
+        except Exception as e:
+            st.session_state.indexed_files.remove(uploaded_file.name)
+            st.sidebar.error(f"❌ Error indexing {uploaded_file.name}: {e}")
+            st.session_state.indexed_files.remove(uploaded_file.name)
+            st.session_state.indexing_in_progress = False
+            st.stop()
+
+    # Add assistant message: finished
+    flow.state.chat_history.append(
+        {"role": "assistant", "content": f"✅ PDF **{uploaded_file.name}** fully analyzed and ready!"}
+    )
+    
+    # Mark file as indexed and reset indexing flag
+    
+st.session_state.indexing_in_progress = False
 
 # -----------------------------
 # Show existing conversation
@@ -58,9 +96,13 @@ for msg in flow.state.chat_history:
 # Chat input (only if not quit)
 # -----------------------------
 if not flow.state.user_quit:
-    user_msg = st.chat_input("Ask me about a book...")
-    if user_msg:
-        flow.take_user_input(user_msg)
+    if not st.session_state.indexing_in_progress:
+        user_msg = st.chat_input("Ask me about a book...")
+        if user_msg:
+            flow.take_user_input(user_msg)
+            st.rerun()
+    else:
+        st.info("Indexing in progress. Please wait...")
         st.rerun()
 
 # -----------------------------
