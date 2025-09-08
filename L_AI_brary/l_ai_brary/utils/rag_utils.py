@@ -5,12 +5,20 @@ import time
 from pathlib import Path
 from typing import Any, Iterable, List, Tuple, cast
 from dataclasses import dataclass
+from src.l_ai_brary.main import ChatbotFlow
 
-from l_ai_brary.main import ChatbotFlow
+
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+
+
 from langchain_community.document_loaders import TextLoader, UnstructuredMarkdownLoader, PDFMinerLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import AzureOpenAIEmbeddings
 from langchain.schema import Document
+from langchain.chat_models import init_chat_model
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -83,6 +91,47 @@ def get_qdrant_client(settings: RAG_Settings) -> QdrantClient:
     """Return Qdrant client"""
     return QdrantClient(url=settings.qdrant_url, timeout=60)
 
+#################################################################### 
+# RAGAS functions
+####################################################################
+
+def get_llm(settings: RAG_Settings):
+    """Initialize LLM if configured"""
+    try:
+        base = os.getenv(settings.lm_base_env)
+        key = os.getenv(settings.lm_key_env)
+        model_name = os.getenv(settings.lm_model_env)
+        if not (base and key and model_name):
+            print("LLM not configured")
+            return None
+        llm = init_chat_model(model_name, model_provider="azure_openai")
+        test_response = llm.invoke("test")
+        if test_response:
+            print("LLM configured")
+            return llm
+        print("LLM test failed")
+        return None
+    except Exception as e:
+        print(f"LLM error: {e}")
+        return None
+    
+def build_rag_chain(llm):
+    """Build RAG chain with citations"""
+    system_prompt = (
+        "Sei un assistente. Rispondi in italiano o inglese. Usa solo i contenuti forniti dallo user per rispondere alle domande, riformulandoli se necessario. "
+        "Cita sempre le fonti. Sii chiaro e conciso. Solo se la domanda dello user non è in alcun modo rispondibile usando il contenuto fornito, dichiaralo esplicitamente"
+    )
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("human", "Domanda:\n{question}\n\nCONTENUTO:\n{context}\n\nIstruzioni:\n1) Rispondi solo col contenuto.\n2) Cita fonti.\n3) Niente invenzioni.")
+    ])
+    chain = (
+        {"context": RunnablePassthrough(), "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    return chain
 
 def get_embeddings(settings: RAG_Settings) -> AzureOpenAIEmbeddings:
     """Return Azure OpenAI embeddings"""
