@@ -1,9 +1,16 @@
 import os
 from pathlib import Path
+import time
 import streamlit as st
 
 from src.l_ai_brary.main import ChatbotFlow
 from utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
+
+import threading
+
+def run_flow(flow: ChatbotFlow):
+    flow.kickoff()
+
 
 FILE_PATH = os.path.abspath(__file__)       # streamlit_frontend/app.py
 FOLDER_PATH = os.path.dirname(FILE_PATH)    # streamlit_frontend
@@ -22,10 +29,25 @@ st.title("📚 L_AI_brary Chatbot")
 # -----------------------------
 # Initialize flow in session state
 # -----------------------------
-if "chat_flow" not in st.session_state:
-    st.session_state.chat_flow = ChatbotFlow()
+if "crewai_flow" not in st.session_state:
+    st.session_state.crewai_flow = ChatbotFlow()
+    threading.Thread(target=run_flow, args=(st.session_state.crewai_flow,)).start()
 
-flow = st.session_state.chat_flow
+# Add this check right before your chat display loop
+if hasattr(st.session_state.crewai_flow.state, 'needs_refresh') and st.session_state.crewai_flow.state.needs_refresh:
+    st.session_state.crewai_flow.state.needs_refresh = False
+    st.rerun()
+
+# Add auto-refresh mechanism
+if "last_message_count" not in st.session_state:
+    st.session_state.last_message_count = 0
+
+
+# Check if chat history has new messages
+current_message_count = len(st.session_state.crewai_flow.state.chat_history)
+if current_message_count > st.session_state.last_message_count:
+    st.session_state.last_message_count = current_message_count
+    st.rerun()
 
 # -----------------------------
 # Sidebar controls
@@ -33,9 +55,9 @@ flow = st.session_state.chat_flow
 st.sidebar.header("Controls")
 
 # Quit button in sidebar
-if not flow.state.user_quit:
+if not st.session_state.crewai_flow.state.user_quit:
     if st.sidebar.button("❌ Quit Chat"):
-        flow.state.user_quit = True
+        st.session_state.crewai_flow.state.user_quit = True
         st.rerun()  # refresh UI immediately
 
 # -----------------------------
@@ -60,7 +82,7 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
 
     st.sidebar.success(f"✅ {uploaded_file.name} saved to knowledge_base.")
 
-    flow.state.chat_history.append(
+    st.session_state.crewai_flow.state.chat_history.append(
         {"role": "assistant", "content": f"Analyzing the loaded PDF **{uploaded_file.name}**... ⏳"}
     )
 
@@ -68,7 +90,13 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
     with st.spinner("Indexing PDF in Qdrant..."):
         try:
             rag_settings = RAG_Settings()
-            index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings)
+            index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings, crewai_flow=st.session_state.crewai_flow)
+            # Add assistant message: finished
+            """
+            st.session_state.crewai_flow.state.chat_history.append(
+                {"role": "assistant", "content": f"✅ PDF **{uploaded_file.name}** fully analyzed and ready!"}
+            )
+            """
         except Exception as e:
             st.session_state.indexed_files.remove(uploaded_file.name)
             st.sidebar.error(f"❌ Error indexing {uploaded_file.name}: {e}")
@@ -76,30 +104,41 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
             st.session_state.indexing_in_progress = False
             st.stop()
 
-    # Add assistant message: finished
-    flow.state.chat_history.append(
-        {"role": "assistant", "content": f"✅ PDF **{uploaded_file.name}** fully analyzed and ready!"}
-    )
+    
     
     # Mark file as indexed and reset indexing flag
     
 st.session_state.indexing_in_progress = False
 
+
 # -----------------------------
 # Show existing conversation
 # -----------------------------
-for msg in flow.state.chat_history:
+# Debug info
+st.sidebar.write(f"Messages count: {len(st.session_state.crewai_flow.state.chat_history)}")
+st.sidebar.write(f"User input: '{st.session_state.crewai_flow.state.user_input}'")
+st.sidebar.write(f"User quit: {st.session_state.crewai_flow.state.user_quit}")
+
+for msg in st.session_state.crewai_flow.state.chat_history:
     with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+        if msg.get("type") == "text":
+            st.write(msg["content"])
+        elif msg.get("type") == "image":
+            st.image(msg["content"])
+        elif msg.get("type") == "md_file":  # TODO: change this into an "put the downloadable file in chat"
+            st.markdown(msg["content"])
+        else:
+            # Default case - just display content as text
+            st.write(msg["content"])
 
 # -----------------------------
 # Chat input (only if not quit)
 # -----------------------------
-if not flow.state.user_quit:
+if not st.session_state.crewai_flow.state.user_quit:
     if not st.session_state.indexing_in_progress:
         user_msg = st.chat_input("Ask me about a book...")
         if user_msg:
-            flow.take_user_input(user_msg)
+            st.session_state.crewai_flow.state.user_input = user_msg
             st.rerun()
     else:
         st.info("Indexing in progress. Please wait...")
@@ -108,7 +147,7 @@ if not flow.state.user_quit:
 # -----------------------------
 # Goodbye message
 # -----------------------------
-if flow.state.user_quit:
+if st.session_state.crewai_flow.state.user_quit:
     st.markdown(
         """
         <div style='text-align: center; font-size: 22px; padding: 2em;'>
@@ -118,3 +157,7 @@ if flow.state.user_quit:
         """,
         unsafe_allow_html=True
     )
+
+if not st.session_state.crewai_flow.state.user_quit:
+    time.sleep(.1)
+    st.rerun()

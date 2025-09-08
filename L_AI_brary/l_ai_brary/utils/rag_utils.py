@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Iterable, List, Tuple, cast
 from dataclasses import dataclass
 
+from l_ai_brary.main import ChatbotFlow
 from langchain_community.document_loaders import TextLoader, UnstructuredMarkdownLoader, PDFMinerLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import AzureOpenAIEmbeddings
@@ -56,8 +57,8 @@ class RAG_Settings:
 ####################################################################
 
 
-def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings):
-    
+def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow: ChatbotFlow):
+
     rag_settings.collection = pdf_path.stem
 
     qdrant_client = get_qdrant_client(rag_settings)
@@ -73,6 +74,8 @@ def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings):
     vector_size = len(embeddings.embed_query("hello world"))
     recreate_collection_for_rag(qdrant_client, rag_settings, vector_size)
     upsert_chunks(qdrant_client, rag_settings, chunks, embeddings)
+
+    crewai_flow.state.chat_history.append({"role": "assistant", "content": f"✅ PDF **{pdf_path.stem}** fully analyzed and ready!"})
 
 
 def get_qdrant_client(settings: RAG_Settings) -> QdrantClient:
