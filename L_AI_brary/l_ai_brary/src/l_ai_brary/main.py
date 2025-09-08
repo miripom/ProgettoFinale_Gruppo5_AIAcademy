@@ -3,11 +3,16 @@ from random import randint
 import time
 from typing import Any, Literal
 
+from crewai import LLM
 from pydantic import BaseModel
 
 from crewai.flow.flow import Flow, start, router, listen
 
 from l_ai_brary.crews.pdf_crew.pdf_crew import PdfCrew
+from l_ai_brary.crews.rag_crew.rag_crew import RagCrew
+from l_ai_brary.crews.image_crew.image_crew import ImageCrew
+from l_ai_brary.crews.search_crew.search_crew import SearchCrew
+from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
 
 class ChatState(BaseModel):
     chat_history: list[dict] = []
@@ -49,47 +54,58 @@ class ChatbotFlow(Flow[ChatState]):
         print(" Inside route_user_input")
         print(f"with query: {self.state.user_input}")
         query = self.state.user_input
+
+        sanitized_result = SanitizeCrew().crew().kickoff(inputs={"user_input": query})
+        print(" SanitizeCrew result: ", sanitized_result)
+
+        llm = LLM(model='azure/gpt-4o')
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    f"You are a binary classifier that routes user queries (after they have been sanitized) to the appropriate service."
+                    f"Analyze the sanitized query: '{sanitized_result}'; "
+                    f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image'; "
+                    f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search';"
+                    f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn'."
+                    f"Only return the labels 'image', 'rag_and_search', 'new_turn' and NEVER say anything else."
+                )
+            }
+        ]
+ 
+        classification = llm.call(messages=messages)
+        print('CLASSIFICATION: ', classification)
+
         if not query:
             time.sleep(2)
             return "new_turn"  # loop back until user says something
+        
         # Simple routing logic — later can be replaced by an LLM-based router
-        if "image" in query.lower():
+        if classification.lower() == "image":
+            self.append_agent_response(sanitized_result)
             return "image"
-        elif "rag" in query.lower() or "book" in query.lower():
-            return "rag"
-        elif "websearch" in query.lower():
-            return "websearch"
+        elif classification.lower() == "rag_and_search":
+            self.append_agent_response(sanitized_result)
+            return "rag_and_search"
         else:
+            self.append_agent_response(sanitized_result)
             return "new_turn"
 
-    @listen("rag")
+
+    @listen("rag_and_search")
     @router(route_user_input)
-    def do_rag(self):
+    def do_rag_and_search(self):
         # call RAG crew
-        print(" Inside do_rag")
+        print(" Inside do_rag_and_search")
         self.append_agent_response("[RAG Answer]", "text")
         return "new_turn"
 
-    @listen("websearch")
-    @router(route_user_input)
-    def do_websearch(self):
-        # call websearch crew
-        print(" Inside do_websearch")
-        self.append_agent_response("[Websearch Answer]", "text")
-        return "new_turn"
 
     @listen("image")
     @router(route_user_input)
     def generate_image(self):
         print(" Inside generate_image")
-        self.append_agent_response("[Generated Image]", "image")
-        return "new_turn"
-
-    @listen("clarification")
-    @router(route_user_input)
-    def ask_for_clarification(self):
-        print(" Inside ask_for_clarification")
-        self.append_agent_response("Please clarify your request.", "text")
+        self.append_agent_response("[Generated Image]", "text") # TODO: change to "image" when image generation is implemented
         return "new_turn"
 
 
