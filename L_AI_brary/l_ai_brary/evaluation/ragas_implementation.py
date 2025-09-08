@@ -1,5 +1,25 @@
+"""RAG evaluation using RAGAS metrics.
+
+This module implements a comprehensive evaluation system for Retrieval-Augmented Generation (RAG)
+using the RAGAS framework. It evaluates various aspects of RAG performance including context
+precision, context recall, faithfulness, and answer relevancy.
+
+The module builds a dataset from questions and ground truth answers, runs RAG queries,
+and evaluates the results using multiple RAGAS metrics to assess the quality of the
+retrieval and generation components.
+"""
+
 import os
+import sys
 import pandas as pd
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+src_dir = os.path.join(parent_dir, 'src')
+
+# Aggiungi entrambe le directory al path
+sys.path.insert(0, parent_dir)
+sys.path.insert(0, src_dir)
 pd.set_option("display.max_columns", None)
 
 from utils.rag_utils import RAG_Settings, hybrid_search, build_rag_chain, get_llm, get_embeddings, format_docs_for_prompt, get_qdrant_client
@@ -24,9 +44,27 @@ def build_ragas_dataset(
     k: int,
     ground_truth: dict[str, str] | None = None,
 ):
-    """
-    Esegue la pipeline RAG per ogni domanda e costruisce il dataset per Ragas.
-    Ogni riga contiene: question, contexts, answer, (opzionale) ground_truth.
+    """Build a dataset for RAGAS evaluation by running RAG pipeline on questions.
+    
+    Executes the RAG pipeline for each question and constructs a dataset suitable
+    for RAGAS evaluation. Each row contains the question, retrieved contexts,
+    generated answer, and optionally the ground truth answer.
+    
+    Args:
+        questions (List[str]): List of questions to evaluate.
+        chain: The RAG chain object used to generate answers.
+        k (int): Number of top documents to retrieve for context.
+        ground_truth (dict[str, str] | None, optional): Dictionary mapping questions
+            to their ground truth answers. Defaults to None.
+    
+    Returns:
+        list: List of dictionaries, each containing evaluation data for one question
+            with keys: 'user_input', 'retrieved_contexts', 'response', and optionally
+            'reference' if ground_truth is provided.
+    
+    Note:
+        The function uses hybrid search to retrieve relevant contexts and formats
+        them appropriately for the RAGAS evaluation framework.
     """
     dataset = []
     for q in questions:
