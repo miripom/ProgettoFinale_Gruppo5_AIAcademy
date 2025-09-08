@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-from src.l_ai_brary.tools.image_tool import ImageGenerationTool
+from l_ai_brary.tools.image_tool import ImageGenerationTool
 
 @CrewBase
 class ImageCrew():
@@ -21,14 +21,14 @@ class ImageCrew():
     @agent
     def image_prompt_generator(self) -> Agent:
         return Agent(
-            config=self.agents_config['image_prompt_generator'],
+            config=self.agents_config['image_prompt_generator'], # type:ignore
             verbose=True
         )
 
     @agent
     def image_creator(self) -> Agent:
         return Agent(
-            config=self.agents_config['image_creator'],
+            config=self.agents_config['image_creator'], # type:ignore
             verbose=True,
             tools=[ImageGenerationTool()]
         )
@@ -36,20 +36,19 @@ class ImageCrew():
     @task
     def scene_extraction_task(self) -> Task:
         return Task(
-            config=self.tasks_config['scene_extraction_task'],
+            config=self.tasks_config['scene_extraction_task'], # type:ignore
         )
 
     @task
     def image_prompt_task(self) -> Task:
         return Task(
-            config=self.tasks_config['image_prompt_task']
+            config=self.tasks_config['image_prompt_task'] # type:ignore
         )
         
     @task
     def image_creation_task(self) -> Task:
         return Task(
-            config=self.tasks_config['image_creation_task']
-
+            config=self.tasks_config['image_creation_task'] # type:ignore
         )
     @crew
     def crew(self) -> Crew:

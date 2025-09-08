@@ -19,7 +19,7 @@ class SearchCrew:
         )
     @task
     def search_task(self) -> Task:
-        return Task(config=self.tasks_config["search_task"])
+        return Task(config=self.tasks_config["search_task"]) # type:ignore
 
     @crew
     def crew(self) -> Crew:
