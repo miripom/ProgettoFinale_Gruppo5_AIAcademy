@@ -1,17 +1,55 @@
-research_task:
+rag_task:
+  variables: ["query"]
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
-  expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    Rispondi alla seguente richiesta dell’utente: "{{query}}".
+    Usa esclusivamente i tool disponibili (HybridSearchTool e list_qdrant_collections_tool)
+    per interrogare la knowledge base locale (RAG del libro caricato dallo user in formato PDF).
+    - Seleziona la Qdrant Collection più pertinente alla query dello user.
+    - Recupera i contenuti più pertinenti alla query dalla Qdrant Collection selezionata.
+    - Sintetizza le informazioni rilevanti in una risposta chiara e fedele ai documenti.
 
-reporting_task:
-  description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Parla e rispondi nella stessa lingua utilizzata dall’utente nella query.
+    Non aggiungere dettagli non presenti nei documenti. 
+    Se non ci sono informazioni rilevanti, dichiara esplicitamente che non sono stati trovati risultati rilevanti.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
+    Una risposta chiara, concisa e fedele ai documenti del RAG,
+    o un messaggio che indica l’assenza di risultati pertinenti.
+  agent: rag_agent
+
+
+search_task:
+  variables: ["query"]
+  description: >
+    Esegui una ricerca online per la seguente richiesta: "{{query}}".
+    - Estrai e riassumi i risultati più rilevanti.
+    - Ignora contenuti ridondanti o irrilevanti.
+    - Evidenzia le informazioni chiave in modo sintetico.
+    - Fornisci un elenco delle fonti principali utilizzate.
+
+    Parla e rispondi nella stessa lingua utilizzata dall’utente nella query.
+    Se non vengono trovati dati utili, dichiara esplicitamente che non ci sono risultati pertinenti.
+  expected_output: >
+    Una risposta sintetica e affidabile basata sui risultati web,
+    accompagnata da una lista delle fonti principali.
+  agent: search_agent
+
+
+synthesizer_task:
+  variables: ["query"]
+  description: >
+    Ricevi i risultati di due attività precedenti:
+    - L’output del RAG, che fornisce informazioni dai documenti della knowledge base locale (RAG del libro caricato dallo user in formato PDF).
+    - L’output della ricerca online, che offre dati aggiornati da fonti esterne.
+
+    Il tuo compito è:
+    - Integrare i due insiemi di informazioni.
+    - Eliminare ridondanze e contraddizioni, riportando solo i concetti più utili.
+    - Evidenziare punti di convergenza e divergenza tra le due fonti, se presenti.
+    - Formulare una risposta finale chiara, ben strutturata e mirata alla query dell’utente: "{{query}}".
+
+    Parla e rispondi nella stessa lingua utilizzata dall’utente nella query.
+    Se entrambe le fonti non contengono dati rilevanti, dichiara onestamente che non sono state trovate informazioni utili.
+  expected_output: >
+    Un riassunto unico, conciso e focalizzato, che integra i risultati del RAG e della ricerca online
+    per rispondere in modo completo alla query dell’utente.
+  agent: synthesizer_agent

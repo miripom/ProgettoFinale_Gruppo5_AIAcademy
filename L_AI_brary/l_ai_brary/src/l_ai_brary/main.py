@@ -9,10 +9,9 @@ from pydantic import BaseModel
 from crewai.flow.flow import Flow, start, router, listen
 
 from l_ai_brary.crews.pdf_crew.pdf_crew import PdfCrew
-from l_ai_brary.crews.rag_crew.rag_crew import RagCrew
 from l_ai_brary.crews.image_crew.image_crew import ImageCrew
-from l_ai_brary.crews.search_crew.search_crew import SearchCrew
 from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
+from l_ai_brary.crews.rag_and_search_crew.rag_and_search_crew import RagAndSearchCrew
 
 class ChatState(BaseModel):
     chat_history: list[dict] = []
@@ -97,7 +96,11 @@ class ChatbotFlow(Flow[ChatState]):
     def do_rag_and_search(self):
         # call RAG crew
         print(" Inside do_rag_and_search")
-        self.append_agent_response("[RAG Answer]", "text")
+
+        result = RagAndSearchCrew().crew().kickoff(inputs={"query": self.state.user_input})
+
+        print(result)
+        self.append_agent_response(result, "text")
         return "new_turn"
 
 
