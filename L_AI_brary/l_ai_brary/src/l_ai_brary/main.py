@@ -1,53 +1,25 @@
-#!/usr/bin/env python
-from random import randint
+from crewai.flow.flow import Flow, start, listen
+from l_ai_brary.crews.search_crew.search_crew import SearchCrew
 
-from pydantic import BaseModel
-
-from crewai.flow import Flow, listen, start
-
-from l_ai_brary.crews.poem_crew.poem_crew import PoemCrew
-
-
-class PoemState(BaseModel):
-    sentence_count: int = 1
-    poem: str = ""
-
-
-class PoemFlow(Flow[PoemState]):
-
+class MainFlow(Flow):
+    
     @start()
-    def generate_sentence_count(self):
-        print("Generating sentence count")
-        self.state.sentence_count = randint(1, 5)
+    def ask_question(self):
+        question = input("Fai la tua domanda: ")
+        return question
+    
 
-    @listen(generate_sentence_count)
-    def generate_poem(self):
-        print("Generating poem")
-        result = (
-            PoemCrew()
-            .crew()
-            .kickoff(inputs={"sentence_count": self.state.sentence_count})
-        )
-
-        print("Poem generated", result.raw)
-        self.state.poem = result.raw
-
-    @listen(generate_poem)
-    def save_poem(self):
-        print("Saving poem")
-        with open("poem.txt", "w") as f:
-            f.write(self.state.poem)
-
+    @listen("ask_question")
+    def run_search(self, question: str):
+        search_crew = SearchCrew().crew()
+        result = search_crew.kickoff(inputs={"query": question})
+        print("\n--- Risultato Web ---")
+        print(result)
+        return result
 
 def kickoff():
-    poem_flow = PoemFlow()
-    poem_flow.kickoff()
-
-
-def plot():
-    poem_flow = PoemFlow()
-    poem_flow.plot()
-
+    flow = MainFlow()
+    flow.kickoff()
 
 if __name__ == "__main__":
     kickoff()
