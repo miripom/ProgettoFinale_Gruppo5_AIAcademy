@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Iterable, List, Tuple, cast
 from dataclasses import dataclass
 
-from l_ai_brary.main import ChatbotFlow
+from l_ai_brary import main as m
 from langchain_community.document_loaders import TextLoader, UnstructuredMarkdownLoader, PDFMinerLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import AzureOpenAIEmbeddings
@@ -57,7 +57,7 @@ class RAG_Settings:
 ####################################################################
 
 
-def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow: ChatbotFlow | None = None):
+def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow: m.ChatbotFlow | None = None):
 
     rag_settings.collection = pdf_path.stem
 

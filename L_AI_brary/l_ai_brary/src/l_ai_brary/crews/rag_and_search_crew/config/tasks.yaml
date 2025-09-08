@@ -53,3 +53,4 @@ synthesizer_task:
     Un riassunto unico, conciso e focalizzato, che integra i risultati del RAG e della ricerca online
     per rispondere in modo completo alla query dell’utente.
   agent: synthesizer_agent
+  

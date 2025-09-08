@@ -7,12 +7,11 @@ from l_ai_brary.tools.rag_tool import HybridSearchTool, ListQdrantCollectionsToo
 from crewai_tools import SerperDevTool
 
 @CrewBase
-class RagAndSearchCrew:
+class RagAndSearchCrew():
     """Crew che gestisce query contro la knowledge base locale (RAG)"""
 
     agents: List[BaseAgent]
     tasks: List[Task]
-
 
     @agent
     def rag_agent(self) -> Agent:
@@ -27,14 +26,12 @@ class RagAndSearchCrew:
             config=self.agents_config["search_agent"],  # type: ignore
             tools=[SerperDevTool()]
         )
-    
     @agent
     def synthesizer_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["synthesizer_agent"],  # type: ignore
             tools=[],
         )
-
 
     @task
     def rag_task(self) -> Task:
@@ -43,20 +40,18 @@ class RagAndSearchCrew:
     @task
     def search_task(self) -> Task:
         return Task(config=self.tasks_config["search_task"]) # type:ignore
-
+    
     @task
     def synthesizer_task(self) -> Task:
         return Task(
             config=self.tasks_config["synthesizer_task"],  # type: ignore
             context=[self.rag_task, self.search_task],
         )
-    
 
     @crew
     def crew(self) -> Crew:
         return Crew(
             agents=self.agents,
             tasks=self.tasks,
-            process=Process.sequential,
-            verbose=True,
+            process=Process.sequential
         )

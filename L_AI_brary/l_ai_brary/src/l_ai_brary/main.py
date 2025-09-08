@@ -35,7 +35,7 @@ class ChatbotFlow(Flow[ChatState]):
         self.state.assistant_response = []
 
         while self.state.user_input == "":
-            time.sleep(.1)  # wait for user input to be set in Streamlit
+            time.sleep(0.5)  # wait for user input to be set in Streamlit
             if self.state.user_quit:
                 print(" User requested to quit. Exiting flow.")
                 return None
@@ -64,20 +64,16 @@ class ChatbotFlow(Flow[ChatState]):
                 "content": (
                     f"You are a binary classifier that routes user queries (after they have been sanitized) to the appropriate service."
                     f"Analyze the sanitized query: '{sanitized_result}'; "
-                    f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image'; "
-                    f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search';"
-                    f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn'."
-                    f"Only return the labels 'image', 'rag_and_search', 'new_turn' and NEVER say anything else."
+                    f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image' (without the '); "
+                    f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search' (without the ');"
+                    f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn' (without the ');"
+                    f"Only return the labels 'image', 'rag_and_search', 'new_turn' (without the ' surrounding them) and NEVER say anything else."
                 )
             }
         ]
  
         classification = llm.call(messages=messages)
         print('CLASSIFICATION: ', classification)
-
-        if not query:
-            time.sleep(2)
-            return "new_turn"  # loop back until user says something
         
         # Simple routing logic — later can be replaced by an LLM-based router
         if classification.lower() == "image":

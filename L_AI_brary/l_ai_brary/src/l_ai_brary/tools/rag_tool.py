@@ -5,8 +5,7 @@ from langchain_openai import AzureOpenAIEmbeddings
 from langchain.schema import Document
 from qdrant_client import QdrantClient
 from langchain_community.vectorstores import Qdrant
-
-from L_AI_brary.l_ai_brary.utils.rag_utils import RAG_Settings, get_embeddings, get_qdrant_client, hybrid_search, format_docs_for_prompt
+from l_ai_brary.utils.rag_utils import RAG_Settings, get_embeddings, get_qdrant_client, hybrid_search, format_docs_for_prompt
 
 @tool("RAGRetriever")
 def HybridSearchTool(query: str, collection_name: str, final_k: int = 6) -> str:
