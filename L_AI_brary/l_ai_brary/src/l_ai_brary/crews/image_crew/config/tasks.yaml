@@ -1,17 +1,35 @@
-research_task:
+scene_extraction_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
+    Analyze the provided text answering the following user query: '{topic}'. Identify a scene that can be clearly depicted in an image.
+    Ensure the scene represents exactly what the user asked for in {topic}.
   expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    A concise description of a single scene suitable for image generation, highlighting key visual elements.
+  agent: scene_extractor
 
-reporting_task:
+image_prompt_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Craft a detailed, realistic prompt for generating an image based on the scene
+    extracted by the previous agent. The prompt should be visually descriptive,
+    clear, and suitable for use with image generation tools. When creating the prompt,
+    ensure that it does not include any copyrighted characters, brand names, or
+    recognizable intellectual property: they should be removed or modified.
+    Focus on original, generic, or inspired
+    elements to avoid any copyright issues while maintaining the scene's essence.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
+    A well-structured image prompt that accurately conveys the scene and its visual details for image generation.
+  context:
+    - scene_extraction_task  
+  agent: image_prompt_generator
+
+image_creation_task:
+  description: >
+    Use the provided image prompt and tool to generate only one realistic image that explains the topic.
+    Modify any element that could be protected by copyright, but keeping the essence of the prompt.
+    Ensure the image is engaging and accessible for a wide audience.
+    Save the image in a folder named 'output'.
+    The image generation tool requires ONLY two parameters: the prompt and the path to save the image.
+  expected_output: >
+    A generated image file (or link) along with a brief description of how the image represents the given topic.
+  context: 
+    - image_prompt_task
+  agent: image_creator
