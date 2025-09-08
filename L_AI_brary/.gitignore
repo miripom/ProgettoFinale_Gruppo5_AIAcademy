@@ -6,3 +6,5 @@ __pycache__/
 mlartifacts/
 qdrant_storage/
 mlruns/
+.venv/
+uv.lock
