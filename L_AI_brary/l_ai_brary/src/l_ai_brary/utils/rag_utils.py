@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 from typing import Any, Iterable, List, Tuple, cast
 from dataclasses import dataclass
-from l_ai_brary.main import ChatbotFlow
+from l_ai_brary import main as m
 
 
 from langchain_core.runnables import RunnablePassthrough

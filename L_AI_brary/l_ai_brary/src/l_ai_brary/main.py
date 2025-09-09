@@ -9,10 +9,9 @@ from pydantic import BaseModel
 from crewai.flow.flow import Flow, start, router, listen
 
 from l_ai_brary.crews.pdf_crew.pdf_crew import PdfCrew
-from l_ai_brary.crews.rag_crew.rag_crew import RagCrew
 from l_ai_brary.crews.image_crew.image_crew import ImageCrew
-from l_ai_brary.crews.search_crew.search_crew import SearchCrew
 from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
+from l_ai_brary.crews.rag_and_search_crew.rag_and_search_crew import RagAndSearchCrew
 
 class ChatState(BaseModel):
     chat_history: list[dict] = []
@@ -36,7 +35,7 @@ class ChatbotFlow(Flow[ChatState]):
         self.state.assistant_response = []
 
         while self.state.user_input == "":
-            time.sleep(.1)  # wait for user input to be set in Streamlit
+            time.sleep(0.5)  # wait for user input to be set in Streamlit
             if self.state.user_quit:
                 print(" User requested to quit. Exiting flow.")
                 return None
@@ -65,20 +64,16 @@ class ChatbotFlow(Flow[ChatState]):
                 "content": (
                     f"You are a binary classifier that routes user queries (after they have been sanitized) to the appropriate service."
                     f"Analyze the sanitized query: '{sanitized_result}'; "
-                    f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image'; "
-                    f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search';"
-                    f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn'."
-                    f"Only return the labels 'image', 'rag_and_search', 'new_turn' and NEVER say anything else."
+                    f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image' (without the '); "
+                    f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search' (without the ');"
+                    f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn' (without the ');"
+                    f"Only return the labels 'image', 'rag_and_search', 'new_turn' (without the ' surrounding them) and NEVER say anything else."
                 )
             }
         ]
  
         classification = llm.call(messages=messages)
         print('CLASSIFICATION: ', classification)
-
-        if not query:
-            time.sleep(2)
-            return "new_turn"  # loop back until user says something
         
         # Simple routing logic — later can be replaced by an LLM-based router
         if classification.lower() == "image":
@@ -97,7 +92,11 @@ class ChatbotFlow(Flow[ChatState]):
     def do_rag_and_search(self):
         # call RAG crew
         print(" Inside do_rag_and_search")
-        self.append_agent_response("[RAG Answer]", "text")
+
+        rag_search_crew = RagAndSearchCrew().crew()
+        result = rag_search_crew.kickoff(inputs={"query": self.state.user_input})
+        
+        self.append_agent_response(rag_search_crew, "text")
         return "new_turn"
 
 
