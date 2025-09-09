@@ -301,22 +301,22 @@ def split_documents(docs: List[Document], settings: RAG_Settings) -> List[Docume
 
 
 def recreate_collection_for_rag(client: QdrantClient, settings: RAG_Settings, vector_size: int):
-"""Create or recreate a Qdrant collection optimized for RAG.
-    
-    Sets up a new Qdrant collection with optimized configuration for vector similarity
-    search and text search. Includes HNSW indexing, quantization, and payload indices
-    for efficient retrieval.
-    
-    Args:
-        client (QdrantClient): Qdrant client instance.
-        settings (RAG_Settings): Configuration containing collection name.
-        vector_size (int): Dimensionality of the embedding vectors.
+    """Create or recreate a Qdrant collection optimized for RAG.
         
-    Note:
-        If a collection with the same name exists, it will be deleted and recreated.
-        The collection is configured with COSINE distance, HNSW indexing for fast
-        similarity search, and scalar quantization for memory efficiency.
-    """
+        Sets up a new Qdrant collection with optimized configuration for vector similarity
+        search and text search. Includes HNSW indexing, quantization, and payload indices
+        for efficient retrieval.
+        
+        Args:
+            client (QdrantClient): Qdrant client instance.
+            settings (RAG_Settings): Configuration containing collection name.
+            vector_size (int): Dimensionality of the embedding vectors.
+            
+        Note:
+            If a collection with the same name exists, it will be deleted and recreated.
+            The collection is configured with COSINE distance, HNSW indexing for fast
+            similarity search, and scalar quantization for memory efficiency.
+        """
     
     if client.collection_exists(settings.collection):
         client.delete_collection(settings.collection)
@@ -416,24 +416,24 @@ def batched_embed_documents(chunks: List[Document], embeddings: AzureOpenAIEmbed
 
 
 def build_points(chunks: List[Document], embeds: List[List[float]]) -> List[PointStruct]:
-"""Build Qdrant point structures from document chunks and embeddings.
-    
-    Combines document chunks with their corresponding embedding vectors to create
-    PointStruct objects suitable for insertion into Qdrant. Extracts metadata
-    and assigns sequential IDs.
-    
-    Args:
-        chunks (List[Document]): List of document chunks containing text and metadata.
-        embeds (List[List[float]]): List of embedding vectors corresponding to chunks.
+    """Build Qdrant point structures from document chunks and embeddings.
         
-    Returns:
-        List[PointStruct]: List of Qdrant points ready for insertion, each containing
-            an ID, vector, and payload with document metadata and text content.
+        Combines document chunks with their corresponding embedding vectors to create
+        PointStruct objects suitable for insertion into Qdrant. Extracts metadata
+        and assigns sequential IDs.
+        
+        Args:
+            chunks (List[Document]): List of document chunks containing text and metadata.
+            embeds (List[List[float]]): List of embedding vectors corresponding to chunks.
             
-    Note:
-        Point IDs start from 1 and increment sequentially. The payload includes
-        document metadata plus chunk-specific information like chunk_id.
-    """
+        Returns:
+            List[PointStruct]: List of Qdrant points ready for insertion, each containing
+                an ID, vector, and payload with document metadata and text content.
+                
+        Note:
+            Point IDs start from 1 and increment sequentially. The payload includes
+            document metadata plus chunk-specific information like chunk_id.
+        """
     pts: List[PointStruct] = []
     for i, (doc, vec) in enumerate(zip(chunks, embeds), start=1):
         payload = {
@@ -455,29 +455,29 @@ def build_points(chunks: List[Document], embeds: List[List[float]]) -> List[Poin
 
 
 def hybrid_search(client: QdrantClient, settings: RAG_Settings, query: str, embeddings: AzureOpenAIEmbeddings):
-"""Perform hybrid search combining semantic and text-based retrieval.
-    
-    Implements a sophisticated hybrid search strategy that combines:
-    1. Semantic similarity search using vector embeddings
-    2. Text-based keyword search using Qdrant's text matching
-    3. Score fusion with configurable weights
-    4. Optional Maximum Marginal Relevance (MMR) for result diversification
-    
-    Args:
-        client (QdrantClient): Qdrant client instance.
-        settings (RAG_Settings): Configuration containing search parameters.
-        query (str): Search query string.
-        embeddings (AzureOpenAIEmbeddings): Embeddings instance for query vectorization.
+    """Perform hybrid search combining semantic and text-based retrieval.
         
-    Returns:
-        List[ScoredPoint]: List of search results ranked by hybrid relevance score,
-            limited to settings.final_k results.
+        Implements a sophisticated hybrid search strategy that combines:
+        1. Semantic similarity search using vector embeddings
+        2. Text-based keyword search using Qdrant's text matching
+        3. Score fusion with configurable weights
+        4. Optional Maximum Marginal Relevance (MMR) for result diversification
+        
+        Args:
+            client (QdrantClient): Qdrant client instance.
+            settings (RAG_Settings): Configuration containing search parameters.
+            query (str): Search query string.
+            embeddings (AzureOpenAIEmbeddings): Embeddings instance for query vectorization.
             
-    Note:
-        The hybrid approach first retrieves semantic candidates, then applies text
-        boost to results that also match keyword search. MMR diversification is
-        applied if enabled to reduce redundancy in results.
-    """
+        Returns:
+            List[ScoredPoint]: List of search results ranked by hybrid relevance score,
+                limited to settings.final_k results.
+                
+        Note:
+            The hybrid approach first retrieves semantic candidates, then applies text
+            boost to results that also match keyword search. MMR diversification is
+            applied if enabled to reduce redundancy in results.
+        """
     sem = qdrant_semantic_search(client, settings, query, embeddings, limit=settings.top_n_semantic, with_vectors=True)
     if not sem: return []
     text_ids = set(qdrant_text_prefilter_ids(client, settings, query, settings.top_n_text))
@@ -503,27 +503,27 @@ def hybrid_search(client: QdrantClient, settings: RAG_Settings, query: str, embe
 
 
 def qdrant_semantic_search(client: QdrantClient, settings: RAG_Settings, query: str, embeddings: AzureOpenAIEmbeddings, limit: int, with_vectors: bool = False):
-"""Perform semantic similarity search in Qdrant using vector embeddings.
-    
-    Converts the query to a vector embedding and searches for similar vectors
-    in the Qdrant collection using cosine similarity.
-    
-    Args:
-        client (QdrantClient): Qdrant client instance.
-        settings (RAG_Settings): Configuration containing collection name.
-        query (str): Search query to vectorize and search for.
-        embeddings (AzureOpenAIEmbeddings): Embeddings instance for query vectorization.
-        limit (int): Maximum number of results to return.
-        with_vectors (bool, optional): Whether to include vectors in results. 
-            Defaults to False.
-            
-    Returns:
-        List[ScoredPoint]: List of semantically similar documents with similarity scores.
+    """Perform semantic similarity search in Qdrant using vector embeddings.
         
-    Note:
-        Uses HNSW approximate search with configurable parameters for performance.
-        Results are ordered by cosine similarity score in descending order.
-    """
+        Converts the query to a vector embedding and searches for similar vectors
+        in the Qdrant collection using cosine similarity.
+        
+        Args:
+            client (QdrantClient): Qdrant client instance.
+            settings (RAG_Settings): Configuration containing collection name.
+            query (str): Search query to vectorize and search for.
+            embeddings (AzureOpenAIEmbeddings): Embeddings instance for query vectorization.
+            limit (int): Maximum number of results to return.
+            with_vectors (bool, optional): Whether to include vectors in results. 
+                Defaults to False.
+                
+        Returns:
+            List[ScoredPoint]: List of semantically similar documents with similarity scores.
+            
+        Note:
+            Uses HNSW approximate search with configurable parameters for performance.
+            Results are ordered by cosine similarity score in descending order.
+        """
     qv = embeddings.embed_query(query)
     res = client.query_points(
         collection_name=settings.collection,
@@ -537,25 +537,25 @@ def qdrant_semantic_search(client: QdrantClient, settings: RAG_Settings, query: 
 
 
 def qdrant_text_prefilter_ids(client: QdrantClient, settings: RAG_Settings, query: str, max_hits: int) -> List[int]:
-"""Get document IDs that match text-based keyword search.
-    
-    Performs text matching search in Qdrant to find documents containing
-    query keywords. Used as part of hybrid search to boost semantically
-    similar results that also contain relevant keywords.
-    
-    Args:
-        client (QdrantClient): Qdrant client instance.
-        settings (RAG_Settings): Configuration containing collection name.
-        query (str): Query string for text matching.
-        max_hits (int): Maximum number of matching IDs to return.
+    """Get document IDs that match text-based keyword search.
         
-    Returns:
-        List[int]: List of document IDs that match the text query.
+        Performs text matching search in Qdrant to find documents containing
+        query keywords. Used as part of hybrid search to boost semantically
+        similar results that also contain relevant keywords.
         
-    Note:
-        Uses Qdrant's scroll API with text filters to efficiently retrieve
-        matching document IDs without loading full payloads or vectors.
-    """
+        Args:
+            client (QdrantClient): Qdrant client instance.
+            settings (RAG_Settings): Configuration containing collection name.
+            query (str): Query string for text matching.
+            max_hits (int): Maximum number of matching IDs to return.
+            
+        Returns:
+            List[int]: List of document IDs that match the text query.
+            
+        Note:
+            Uses Qdrant's scroll API with text filters to efficiently retrieve
+            matching document IDs without loading full payloads or vectors.
+        """
     matched_ids: List[int] = []
     next_page = None
     while True:
@@ -574,26 +574,26 @@ def qdrant_text_prefilter_ids(client: QdrantClient, settings: RAG_Settings, quer
 
 
 def mmr_select(query_vec: List[float], candidates_vecs: List[List[float]], k: int, lambda_mult: float) -> List[int]:
-"""Select diverse results using Maximum Marginal Relevance (MMR).
-    
-    Implements MMR algorithm to balance relevance and diversity in search results.
-    Iteratively selects documents that are relevant to the query while being
-    dissimilar to already selected documents.
-    
-    Args:
-        query_vec (List[float]): Query vector for relevance calculation.
-        candidates_vecs (List[List[float]]): List of candidate document vectors.
-        k (int): Number of documents to select.
-        lambda_mult (float): Balance parameter between relevance (1.0) and 
-            diversity (0.0). Typical values: 0.5-0.7.
-            
-    Returns:
-        List[int]: Indices of selected documents in order of selection.
+    """Select diverse results using Maximum Marginal Relevance (MMR).
         
-    Note:
-        MMR score = λ * relevance - (1-λ) * max_similarity_to_selected
-        Higher lambda_mult favors relevance over diversity.
-    """
+        Implements MMR algorithm to balance relevance and diversity in search results.
+        Iteratively selects documents that are relevant to the query while being
+        dissimilar to already selected documents.
+        
+        Args:
+            query_vec (List[float]): Query vector for relevance calculation.
+            candidates_vecs (List[List[float]]): List of candidate document vectors.
+            k (int): Number of documents to select.
+            lambda_mult (float): Balance parameter between relevance (1.0) and 
+                diversity (0.0). Typical values: 0.5-0.7.
+                
+        Returns:
+            List[int]: Indices of selected documents in order of selection.
+            
+        Note:
+            MMR score = λ * relevance - (1-λ) * max_similarity_to_selected
+            Higher lambda_mult favors relevance over diversity.
+        """
     import numpy as np
     V = np.array(candidates_vecs, dtype=float)
     q = np.array(query_vec, dtype=float)
@@ -625,24 +625,24 @@ def mmr_select(query_vec: List[float], candidates_vecs: List[List[float]], k: in
 
 
 def format_docs_for_prompt(points: Iterable[Any]) -> str:
-"""Format document points for inclusion in LLM prompts with source citations.
-    
-    Converts Qdrant search result points into a formatted string suitable for
-    use as context in RAG prompts. Each document includes source attribution
-    for proper citation in generated responses.
-    
-    Args:
-        points (Iterable[Any]): Iterable of Qdrant points containing document 
-            payload with text and metadata.
-            
-    Returns:
-        str: Formatted string with each document prefixed by its source,
-            separated by double newlines for clear delineation.
-            
-    Note:
-        Format: "[source:<source_name>] <document_text>" for each document.
-        Unknown sources are labeled as "unknown".
-    """
+    """Format document points for inclusion in LLM prompts with source citations.
+        
+        Converts Qdrant search result points into a formatted string suitable for
+        use as context in RAG prompts. Each document includes source attribution
+        for proper citation in generated responses.
+        
+        Args:
+            points (Iterable[Any]): Iterable of Qdrant points containing document 
+                payload with text and metadata.
+                
+        Returns:
+            str: Formatted string with each document prefixed by its source,
+                separated by double newlines for clear delineation.
+                
+        Note:
+            Format: "[source:<source_name>] <document_text>" for each document.
+            Unknown sources are labeled as "unknown".
+        """
     blocks = []
     for p in points:
         pay = p.payload or {}

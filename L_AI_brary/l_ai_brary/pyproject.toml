@@ -11,9 +11,9 @@ dependencies = [
     "mlflow>=3.3.2",
     "torch>=2.8.0",
     "transformers>=4.46.3",
-
     "ragas>=0.3.3",
     "streamlit>=1.49.1",
+    "textstat>=0.7.10",
 ]
 
 [project.scripts]
