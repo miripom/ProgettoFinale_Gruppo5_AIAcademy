@@ -94,7 +94,13 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
     with st.spinner("Indexing PDF in Qdrant..."):
         try:
             rag_settings = RAG_Settings()
-            index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings, crewai_flow=st.session_state.crewai_flow)
+            # 🔥 Start indexing in background thread
+            threading.Thread(
+                target=index_pdf_in_qdrant,
+                args=(pdf_path, rag_settings, st.session_state.crewai_flow),
+                daemon=True
+            ).start()
+            # index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings, crewai_flow=st.session_state.crewai_flow)
             # Add assistant message: finished
             """
             st.session_state.crewai_flow.state.chat_history.append(

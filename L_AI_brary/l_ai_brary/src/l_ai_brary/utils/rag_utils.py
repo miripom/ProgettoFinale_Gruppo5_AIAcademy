@@ -104,7 +104,7 @@ class RAG_Settings:
 ####################################################################
 
 
-def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow: ChatbotFlow | None = None):
+def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow: m.ChatbotFlow | None = None):
     """Index a PDF document in Qdrant vector database.
     
     This function processes a PDF document by loading, chunking, embedding, and storing
