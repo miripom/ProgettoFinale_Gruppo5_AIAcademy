@@ -1,7 +1,8 @@
 rag_task:
-  variables: ["query"]
+  variables: ["query", "chat_history_context"]
   description: >
-    Rispondi alla seguente richiesta dell’utente: "{{query}}".
+    Rispondi esclusivamente alla seguente richiesta dell’utente: "{{query}}".
+    Se serve contesto sulla conversazione precedente per comprendere la richiesta attuale dello user, usalo: "{{chat_history_context}}".
     Usa esclusivamente i tool disponibili (HybridSearchTool e list_qdrant_collections_tool)
     per interrogare la knowledge base locale (RAG del libro caricato dallo user in formato PDF).
     - Seleziona la Qdrant Collection più pertinente alla query dello user.
@@ -18,9 +19,10 @@ rag_task:
 
 
 search_task:
-  variables: ["query"]
+  variables: ["query", "chat_history_context"]
   description: >
     Esegui una ricerca online per la seguente richiesta: "{{query}}".
+    Se serve contesto sulla conversazione precedente per comprendere la richiesta attuale dello user, usalo: "{{chat_history_context}}".
     - Estrai e riassumi i risultati più rilevanti.
     - Ignora contenuti ridondanti o irrilevanti.
     - Evidenzia le informazioni chiave in modo sintetico.
@@ -35,7 +37,7 @@ search_task:
 
 
 synthesizer_task:
-  variables: ["query"]
+  variables: ["query", "chat_history_context"]
   description: >
     Ricevi i risultati di due attività precedenti:
     - L’output del RAG, che fornisce informazioni dai documenti della knowledge base locale (RAG del libro caricato dallo user in formato PDF).
@@ -47,7 +49,9 @@ synthesizer_task:
     - Evidenziare punti di convergenza e divergenza tra le due fonti, se presenti, specificando se necessario come 
       "nei file caricati sono presenti informazioni che dicono X, mentre dalle fonti web risulta Y".
     - Formulare una risposta finale chiara, ben strutturata e mirata alla query dell’utente: "{{query}}".
+    - Se serve contesto sulla conversazione precedente per comprendere la richiesta attuale dello user, usalo: "{{chat_history_context}}".
 
+    Riferisciti sempre ai documenti della RAG come "I libri caricati dall'utente", o "i file caricati dall'utente", ma non come "RAG" (rimani in ambito letterario).
     Parla e rispondi nella stessa lingua utilizzata dall’utente nella query.
     Se entrambe le fonti non contengono dati rilevanti, dichiara onestamente che nè sui files locali nè online sono state trovate informazioni utili.
   expected_output: >

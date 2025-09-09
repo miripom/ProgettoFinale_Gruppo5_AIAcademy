@@ -1,6 +1,9 @@
 scene_extraction_task:
+  variables: ["topic", "chat_history_context"]
   description: >
-    Analyze the provided text answering the following user query: '{topic}'. Identify a scene that can be clearly depicted in an image.
+    Analyze the provided text answering the following user query: '{topic}'. 
+    Se serve contesto sulla conversazione precedente per comprendere la richiesta attuale dello user, usalo: "{{chat_history_context}}".
+    Identify a scene that can be clearly depicted in an image.
     Ensure the scene represents what the user asked for in {topic}, but remove or modify any copyrighted fictional characters (including their names), brand names, or recognizable intellectual property to avoid copyright issues.
   expected_output: >
     A concise description of a single scene suitable for image generation, highlighting key visual elements.
