@@ -206,6 +206,7 @@ class ChatbotFlow(Flow[ChatState]):
                     f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search' (without the ');"
                     f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn' (without the ');"
                     f"Only return the labels 'image', 'rag_and_search', 'new_turn' (without the ' surrounding them) and NEVER say anything else."
+                    f"Don't focus on copyright issues (they will be handled later), just focus on the content of the query."
  
                 )
             }
@@ -259,11 +260,11 @@ class ChatbotFlow(Flow[ChatState]):
         self.state.summary = str(result.raw)
         self.append_agent_response(self.state.summary, "text")
 
-        mlflow.log_metric("search_duration_seconds", duration)
-        mlflow.log_metric("search_results_chars", len(self.state.summary))
-        mlflow.log_metric("search_results_words", len(self.state.summary.split()))
-        mlflow.log_metric("search_results_lines", self.state.summary.count("\n") + 1 if self.state.summary else 0)
-        mlflow.log_text(self.state.summary, "search_summary.txt")   
+        mlflow.log_metric("rag_duration_seconds", duration)
+        mlflow.log_metric("rag_results_chars", len(self.state.summary))
+        mlflow.log_metric("rag_results_words", len(self.state.summary.split()))
+        mlflow.log_metric("rag_results_lines", self.state.summary.count("\n") + 1 if self.state.summary else 0)
+        mlflow.log_text(self.state.summary, "rag_summary.txt")
         return self.state
 
 
@@ -299,11 +300,8 @@ class ChatbotFlow(Flow[ChatState]):
         self.state.summary = str(path.raw)
  
         # Metriche/artefatti ricerca
-        mlflow.log_metric("search_duration_seconds", duration)
-        mlflow.log_metric("search_results_chars", len(self.state.summary))
-        mlflow.log_metric("search_results_words", len(self.state.summary.split()))
-        mlflow.log_metric("search_results_lines", self.state.summary.count("\n") + 1 if self.state.summary else 0)
-        mlflow.log_text(self.state.summary, "search_summary.txt")        
+        mlflow.log_metric("image_duration_seconds", duration)
+        mlflow.log_text(self.state.summary, "image_summary.txt")
         return "new_turn"
     
     @listen(or_(do_rag_and_search, generate_image))

@@ -20,14 +20,13 @@ semantic_filtering:
     2. If the input IS NOT relevant to the literary domain → return:
        "❌ Please rephrase your query. Only literary-related questions are allowed."
     3. If the input asks for copyrighted or trademarked works (e.g. Harry Potter images,
-       Marvel characters, Disney, etc.) → rephrase to a generic, safe equivalent
-       (e.g. "a young wizard at a magic school" instead of "Harry Potter").
+       Marvel characters, Disney, etc.) → keep it as it is.
     4. Never answer the query.
     5. Never invent content.
     6. Only return either:
        - The sanitized input query, or
        - The short rejection message.
-
+ 
   expected_output: >
     Either:
     - The original safe literary input, OR

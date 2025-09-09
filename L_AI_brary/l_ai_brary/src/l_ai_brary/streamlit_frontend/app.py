@@ -177,10 +177,6 @@ st.session_state.indexing_in_progress = False
 # =============================================================================
 # Chat History Display and Message Rendering
 # =============================================================================
-# Debug info
-st.sidebar.write(f"Messages count: {len(st.session_state.crewai_flow.state.chat_history)}")
-st.sidebar.write(f"User input: '{st.session_state.crewai_flow.state.user_input}'")
-st.sidebar.write(f"User quit: {st.session_state.crewai_flow.state.user_quit}")
 
 for msg in st.session_state.crewai_flow.state.chat_history:
     with st.chat_message(msg["role"]):
