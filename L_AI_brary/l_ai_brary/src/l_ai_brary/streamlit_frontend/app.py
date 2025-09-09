@@ -6,7 +6,6 @@ import streamlit as st
 from l_ai_brary.main import ChatbotFlow
 from l_ai_brary.utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
 
-
 import threading
 
 def run_flow(flow: ChatbotFlow):
@@ -30,9 +29,13 @@ st.title("📚 L_AI_brary Chatbot")
 # -----------------------------
 # Initialize flow in session state
 # -----------------------------
+
 if "crewai_flow" not in st.session_state:
+    print("haven't started crewai flow yet")
     st.session_state.crewai_flow = ChatbotFlow()
-    threading.Thread(target=run_flow, args=(st.session_state.crewai_flow,)).start()
+    threading.Thread(target=run_flow, args=(st.session_state.crewai_flow,), daemon=True).start()
+    print("have started crewai flow")
+
 
 # Add this check right before your chat display loop
 if hasattr(st.session_state.crewai_flow.state, 'needs_refresh') and st.session_state.crewai_flow.state.needs_refresh:
@@ -91,7 +94,13 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
     with st.spinner("Indexing PDF in Qdrant..."):
         try:
             rag_settings = RAG_Settings()
-            index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings, crewai_flow=st.session_state.crewai_flow)
+            # 🔥 Start indexing in background thread
+            threading.Thread(
+                target=index_pdf_in_qdrant,
+                args=(pdf_path, rag_settings, st.session_state.crewai_flow),
+                daemon=True
+            ).start()
+            # index_pdf_in_qdrant(pdf_path=pdf_path, rag_settings=rag_settings, crewai_flow=st.session_state.crewai_flow)
             # Add assistant message: finished
             """
             st.session_state.crewai_flow.state.chat_history.append(

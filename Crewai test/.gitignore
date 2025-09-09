@@ -3,3 +3,4 @@ Lib/
 .DS_Store
 .venv/
 .env
+qdrant_storage/

@@ -3,11 +3,11 @@ import os
 import time
 import mlflow
 import pandas as pd
+from typing import Any, ClassVar, Literal
 from crewai import LLM
 from datetime import datetime
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from typing import Any, Literal
 from crewai.flow.flow import Flow, start, router, listen, or_
 from l_ai_brary.crews.image_crew.image_crew import ImageCrew
 from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
@@ -18,6 +18,7 @@ load_dotenv()  # take environment variables from .env.
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
 mlflow.autolog()  # autolog per openai/langchain/crewai dove supportato
 mlflow.set_experiment("L_AI_brary")
+
 
 class ChatState(BaseModel):
     chat_history: list[dict] = []
@@ -32,6 +33,11 @@ class ChatState(BaseModel):
     context: str = ""          
     ground_truth: str = "" 
 
+    # Mark these as ClassVar so Pydantic ignores them
+    LLMclassifier: ClassVar[LLM] = LLM(model='azure/gpt-4o')
+    sanitizer_crew: ClassVar = SanitizeCrew().crew()
+    image_crew: ClassVar = ImageCrew().crew()
+    rag_and_search_crew: ClassVar = RagAndSearchCrew().crew()
 
 class ChatbotFlow(Flow[ChatState]):
 
@@ -46,10 +52,10 @@ class ChatbotFlow(Flow[ChatState]):
         self.state.assistant_response = []
 
         while self.state.user_input == "":
-            time.sleep(.1)  # wait for user input to be set in Streamlit
+            time.sleep(0.5)  # wait for user input to be set in Streamlit
             if self.state.user_quit:
                 print(" User requested to quit. Exiting flow.")
-                return None
+                return "quit_flow"
         
         if self.state.user_input:
             print(f" added input to chat history: {self.state.user_input}")
@@ -59,42 +65,44 @@ class ChatbotFlow(Flow[ChatState]):
         mlflow.log_param(f"user_query_{self.state.counts}", self.state.user_input)
         mlflow.log_metric("user_query_length_chars", len(self.state.user_input))
         mlflow.log_metric("user_query_length_words", len(self.state.user_input.split()))
-        return self.state
+        
+        return "continue_flow"
 
 
     @router(wait_for_input)
-    def route_user_input(self):
+    def route_user_input(self, quit_or_continue: str):
         """Decide what to do with the user query."""
         print(" Inside route_user_input")
         print(f"with query: {self.state.user_input}")
+
+        if quit_or_continue == "quit_flow":
+            return "quit_flow"
+
         query = self.state.user_input
 
-        self.state.sanitized_result = SanitizeCrew().crew().kickoff(inputs={"user_input": query})
-        print(" SanitizeCrew result: ", self.state.sanitized_result)
 
-        llm = LLM(model='azure/gpt-4o')
+        sanitized_result = self.state.sanitizer_crew.kickoff(inputs={"user_input": query})
+        print(" SanitizeCrew result: ", sanitized_result)
+
         messages = [
             {
                 "role": "system",
                 "content": (
-                    f"You are a binary classifier that routes user queries (after they have been sanitized) to the appropriate service.\n"
-                    f"Analyze the sanitized query: '{self.state.sanitized_result}' and answer as follows:\n"
-                    f"1 - If the sanitized query is asking to create, generate, draw, or in general it is asking for a visual content about literature (comics included), return 'image';\n"
-                    f"2 - If the sanitized query is asking for information, summaries, facts, or discussion about books, authors, plots, genres, comics or the literature domain in general (do not include generation, drawing, and visualization of images of scene or characters in this step), return 'rag_and_search';\n"
-                    f"3 - If none of the above, return 'new_turn'.\n"
-                    f"Only return the labels 'image', 'rag_and_search', or 'new_turn' and NEVER say anything else.\n"
-                    f"Do NOT consider specific copyrighted names as preventing an 'image' classification. Focus on the user's intent to generate a visual."
+
+                    f"You are a binary classifier that routes user queries (after they have been sanitized) to the appropriate service."
+                    f"Analyze the sanitized query: '{sanitized_result}'; "
+                    f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image' (without the '); "
+                    f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search' (without the ');"
+                    f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn' (without the ');"
+                    f"Only return the labels 'image', 'rag_and_search', 'new_turn' (without the ' surrounding them) and NEVER say anything else."
+
                 )
             }
         ]
 
  
-        classification = llm.call(messages=messages)
+        classification = self.state.LLMclassifier.call(messages=messages)
         print('CLASSIFICATION: ', classification)
-
-        if not query:
-            time.sleep(2)
-            return "new_turn"  # loop back until user says something
         
         # Simple routing logic — later can be replaced by an LLM-based router
         if classification.lower() == "image":
@@ -114,21 +122,21 @@ class ChatbotFlow(Flow[ChatState]):
     @router(route_user_input)
     def do_rag_and_search(self):
         # call RAG crew
-        # started = time.perf_counter()
-        # crew = RagAndSearchCrew().crew()
-        # answer = crew.kickoff(inputs={'input': self.state.sanitized_result})
-        # print(" Inside do_rag_and_search")
-        # self.append_agent_response(answer, "text")
-        # duration = time.perf_counter() - started
-        # self.state.summary = str(answer.raw)
+        started = time.perf_counter()
 
-        # Metriche/artefatti ricerca
-        # mlflow.log_metric("search_duration_seconds", duration)
-        # mlflow.log_metric("search_results_chars", len(self.state.summary))
-        # mlflow.log_metric("search_results_words", len(self.state.summary.split()))
-        # mlflow.log_metric("search_results_lines", self.state.summary.count("\n") + 1 if self.state.summary else 0)
-        # mlflow.log_text(self.state.summary, "search_summary.txt")        
-        return self.state
+        print(" Inside do_rag_and_search")
+
+        result = self.state.rag_and_search_crew.kickoff(inputs={"query": self.state.user_input})
+        duration = time.perf_counter() - started
+        self.state.summary = str(result.raw)
+        self.append_agent_response(result, "text")
+#         Metriche/artefatti ricerca
+        mlflow.log_metric("search_duration_seconds", duration)
+        mlflow.log_metric("search_results_chars", len(self.state.summary))
+        mlflow.log_metric("search_results_words", len(self.state.summary.split()))
+        mlflow.log_metric("search_results_lines", self.state.summary.count("\n") + 1 if self.state.summary else 0)
+        mlflow.log_text(self.state.summary, "search_summary.txt")   
+        return "new_turn"
 
 
     @listen("image")
@@ -183,6 +191,7 @@ class ChatbotFlow(Flow[ChatState]):
             mlflow.log_text(str(e), "llm_judge_error.txt")
 
         return "new_turn"
+
 
     # ---------- judge con mlflow.evaluate ----------
     def _run_llm_judge_mlflow(
@@ -240,6 +249,15 @@ class ChatbotFlow(Flow[ChatState]):
         )
         # MLflow ha già loggato metriche e tabella 'eval_results_table'
         return results.metrics
+
+    
+    @listen("quit_flow")
+    def quit_flow(self):
+        print(" Inside quit_flow")
+        self.append_agent_response("Goodbye!", "text")
+        return "end"
+    
+
 
     def append_agent_response(self, response: str | Any, type: Literal["text", "image", "md_file"] = "text"):
         self.state.assistant_response.append(response)
