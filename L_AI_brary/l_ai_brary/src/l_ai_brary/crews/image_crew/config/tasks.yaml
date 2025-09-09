@@ -31,9 +31,10 @@ image_creation_task:
     Ensure the image is engaging and accessible for a wide audience.
     Save the image in a folder named 'output'.
     The image generation tool requires ONLY two parameters: the prompt and the path to save the image.
-    After generating the image, answer only with the path to the generated image file, without adding any other kind of text.
+    After generating the image, answer only with a string object containing the path to the generated image file, without adding any other kind of text.
+    Example format: output\generated_123456.png
   expected_output: >
-    A generated image file (or link) along with a brief description of how the image represents the given topic.
+    The path to the generated image file.
   context: 
     - image_prompt_task
   agent: image_creator

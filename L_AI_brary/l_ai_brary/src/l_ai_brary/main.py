@@ -45,6 +45,10 @@ from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
 from l_ai_brary.crews.rag_and_search_crew.rag_and_search_crew import RagAndSearchCrew
 import threading
  
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="mlflow")
+warnings.filterwarnings("ignore", message=".*label\\(\\) is deprecated.*")
+
 load_dotenv()  # take environment variables from .env.
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
 mlflow.autolog()  # autolog per openai/langchain/crewai dove supportato
@@ -464,7 +468,6 @@ class ChatbotFlow(Flow[ChatState]):
         Returns:
             str: Always returns "end" to terminate the conversation flow.
         """
-        print(" Inside quit_flow")
         self.append_agent_response("Goodbye!", "text")
         return "end"
    
