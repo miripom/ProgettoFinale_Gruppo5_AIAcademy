@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 import time
 import streamlit as st
-import asyncio
 
 from l_ai_brary.main import ChatbotFlow
 from l_ai_brary.utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
@@ -36,6 +35,7 @@ if "crewai_flow" not in st.session_state:
     st.session_state.crewai_flow = ChatbotFlow()
     threading.Thread(target=run_flow, args=(st.session_state.crewai_flow,), daemon=True).start()
     print("have started crewai flow")
+
 
 # Add this check right before your chat display loop
 if hasattr(st.session_state.crewai_flow.state, 'needs_refresh') and st.session_state.crewai_flow.state.needs_refresh:

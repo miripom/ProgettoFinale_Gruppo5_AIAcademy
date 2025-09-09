@@ -1,3 +1,4 @@
+
 """RAG utilities for document processing, indexing, and retrieval.
 
 This module provides comprehensive utilities for implementing a Retrieval-Augmented Generation (RAG)
@@ -13,7 +14,6 @@ The module supports PDF documents and integrates with Azure OpenAI embeddings an
 through LangChain. It implements a sophisticated hybrid search strategy that combines
 semantic similarity search with keyword-based text search for improved retrieval quality.
 """
-
 from __future__ import annotations
 
 import os
@@ -22,14 +22,9 @@ from pathlib import Path
 from typing import Any, Iterable, List, Tuple, cast
 from dataclasses import dataclass
 from l_ai_brary import main as m
-
-
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-
-
-
 from langchain_community.document_loaders import TextLoader, UnstructuredMarkdownLoader, PDFMinerLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import AzureOpenAIEmbeddings
@@ -80,6 +75,7 @@ class RAG_Settings:
         lm_key_env (str): Environment variable name for LLM API key.
         lm_model_env (str): Environment variable name for LLM model name.
     """
+
     qdrant_url: str = "http://localhost:6333"        # Qdrant URL
     collection: str = "rag_chunks"                   # Collection name
     upsert_batch_size: int = 100                     # Upsert batch size
@@ -104,6 +100,7 @@ class RAG_Settings:
 ####################################################################
 
 
+
 def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow: m.ChatbotFlow | None = None):
     """Index a PDF document in Qdrant vector database.
     
@@ -121,7 +118,6 @@ def index_pdf_in_qdrant(pdf_path: Path, rag_settings: RAG_Settings, crewai_flow:
         This function will recreate the collection if it already exists, removing
         any previously indexed content for the same PDF.
     """
-
     rag_settings.collection = pdf_path.stem
 
     qdrant_client = get_qdrant_client(rag_settings)
@@ -305,7 +301,7 @@ def split_documents(docs: List[Document], settings: RAG_Settings) -> List[Docume
 
 
 def recreate_collection_for_rag(client: QdrantClient, settings: RAG_Settings, vector_size: int):
-    """Create or recreate a Qdrant collection optimized for RAG.
+"""Create or recreate a Qdrant collection optimized for RAG.
     
     Sets up a new Qdrant collection with optimized configuration for vector similarity
     search and text search. Includes HNSW indexing, quantization, and payload indices
@@ -420,7 +416,7 @@ def batched_embed_documents(chunks: List[Document], embeddings: AzureOpenAIEmbed
 
 
 def build_points(chunks: List[Document], embeds: List[List[float]]) -> List[PointStruct]:
-    """Build Qdrant point structures from document chunks and embeddings.
+"""Build Qdrant point structures from document chunks and embeddings.
     
     Combines document chunks with their corresponding embedding vectors to create
     PointStruct objects suitable for insertion into Qdrant. Extracts metadata
@@ -459,7 +455,7 @@ def build_points(chunks: List[Document], embeds: List[List[float]]) -> List[Poin
 
 
 def hybrid_search(client: QdrantClient, settings: RAG_Settings, query: str, embeddings: AzureOpenAIEmbeddings):
-    """Perform hybrid search combining semantic and text-based retrieval.
+"""Perform hybrid search combining semantic and text-based retrieval.
     
     Implements a sophisticated hybrid search strategy that combines:
     1. Semantic similarity search using vector embeddings
@@ -507,7 +503,7 @@ def hybrid_search(client: QdrantClient, settings: RAG_Settings, query: str, embe
 
 
 def qdrant_semantic_search(client: QdrantClient, settings: RAG_Settings, query: str, embeddings: AzureOpenAIEmbeddings, limit: int, with_vectors: bool = False):
-    """Perform semantic similarity search in Qdrant using vector embeddings.
+"""Perform semantic similarity search in Qdrant using vector embeddings.
     
     Converts the query to a vector embedding and searches for similar vectors
     in the Qdrant collection using cosine similarity.
@@ -541,7 +537,7 @@ def qdrant_semantic_search(client: QdrantClient, settings: RAG_Settings, query: 
 
 
 def qdrant_text_prefilter_ids(client: QdrantClient, settings: RAG_Settings, query: str, max_hits: int) -> List[int]:
-    """Get document IDs that match text-based keyword search.
+"""Get document IDs that match text-based keyword search.
     
     Performs text matching search in Qdrant to find documents containing
     query keywords. Used as part of hybrid search to boost semantically
@@ -578,7 +574,7 @@ def qdrant_text_prefilter_ids(client: QdrantClient, settings: RAG_Settings, quer
 
 
 def mmr_select(query_vec: List[float], candidates_vecs: List[List[float]], k: int, lambda_mult: float) -> List[int]:
-    """Select diverse results using Maximum Marginal Relevance (MMR).
+"""Select diverse results using Maximum Marginal Relevance (MMR).
     
     Implements MMR algorithm to balance relevance and diversity in search results.
     Iteratively selects documents that are relevant to the query while being
@@ -629,7 +625,7 @@ def mmr_select(query_vec: List[float], candidates_vecs: List[List[float]], k: in
 
 
 def format_docs_for_prompt(points: Iterable[Any]) -> str:
-    """Format document points for inclusion in LLM prompts with source citations.
+"""Format document points for inclusion in LLM prompts with source citations.
     
     Converts Qdrant search result points into a formatted string suitable for
     use as context in RAG prompts. Each document includes source attribution

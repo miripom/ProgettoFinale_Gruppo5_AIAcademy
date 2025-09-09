@@ -12,8 +12,8 @@ lexical_cleaning:
 
 semantic_filtering:
   description: >
+    You are a semantic sanitizer specialized in the literary domain.
     Task: Sanitize user input for downstream literary agents.
-
     Rules:
     1. If the input IS clearly relevant to books, literature, authors,
        comics, magazines, genres, or literary analysis → return it as-is.

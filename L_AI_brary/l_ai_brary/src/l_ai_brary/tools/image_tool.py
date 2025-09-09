@@ -48,20 +48,22 @@ class ImageGenerationTool(BaseTool):
 				size="1024x1024",   # options: 256x256, 512x512, 1024x1024
 				response_format="b64_json",
 		)
-
+		path = 'output'
 		try:
-
 			if result and result.data and len(result.data) > 0:
 				image_base64 = result.data[0].b64_json
 				if image_base64 is None:
 					raise ValueError("No base64 image returned by the API")
 				image_bytes = base64.b64decode(image_base64)
 
-				# filename = os.path.join(path, f"generated_{int(time.time())}.png")
-				filename = f"generated_{int(time.time())}.png"
+				# Crea la cartella se non esiste
+				os.makedirs(path, exist_ok=True)
 
+				filename = os.path.join(path, f"generated_{int(time.time())}.png")
 				with open(filename, "wb") as f:
-						f.write(image_bytes)
+					f.write(image_bytes)
 
 		except Exception as e:
 			print(f"Error generating image: {e}")
+
+		return filename
