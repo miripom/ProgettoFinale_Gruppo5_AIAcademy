@@ -17,6 +17,7 @@ class RagAndSearchCrew():
     def rag_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["rag_agent"],  # type: ignore
+            verbose=True,
             tools=[HybridSearchTool, ListQdrantCollectionsTool]   # tool generico per interrogare il RAG
         )
     
@@ -24,12 +25,14 @@ class RagAndSearchCrew():
     def search_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["search_agent"],  # type: ignore
+            verbose=True,
             tools=[SerperDevTool()]
         )
     @agent
     def synthesizer_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["synthesizer_agent"],  # type: ignore
+            verbose=True,
             tools=[],
         )
 
@@ -45,7 +48,7 @@ class RagAndSearchCrew():
     def synthesizer_task(self) -> Task:
         return Task(
             config=self.tasks_config["synthesizer_task"],  # type: ignore
-            context=[self.rag_task, self.search_task],
+            # context=[self.rag_task, self.search_task],
         )
 
     @crew

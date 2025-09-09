@@ -30,9 +30,12 @@ st.title("📚 L_AI_brary Chatbot")
 # -----------------------------
 # Initialize flow in session state
 # -----------------------------
+
 if "crewai_flow" not in st.session_state:
+    print("haven't started crewai flow yet")
     st.session_state.crewai_flow = ChatbotFlow()
     threading.Thread(target=run_flow, args=(st.session_state.crewai_flow,), daemon=True).start()
+    print("have started crewai flow")
 
 # Add this check right before your chat display loop
 if hasattr(st.session_state.crewai_flow.state, 'needs_refresh') and st.session_state.crewai_flow.state.needs_refresh:

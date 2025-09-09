@@ -44,13 +44,17 @@ synthesizer_task:
     Il tuo compito è:
     - Integrare i due insiemi di informazioni.
     - Eliminare ridondanze e contraddizioni, riportando solo i concetti più utili.
-    - Evidenziare punti di convergenza e divergenza tra le due fonti, se presenti.
+    - Evidenziare punti di convergenza e divergenza tra le due fonti, se presenti, specificando se necessario come 
+      "nei file caricati sono presenti informazioni che dicono X, mentre dalle fonti web risulta Y".
     - Formulare una risposta finale chiara, ben strutturata e mirata alla query dell’utente: "{{query}}".
 
     Parla e rispondi nella stessa lingua utilizzata dall’utente nella query.
-    Se entrambe le fonti non contengono dati rilevanti, dichiara onestamente che non sono state trovate informazioni utili.
+    Se entrambe le fonti non contengono dati rilevanti, dichiara onestamente che nè sui files locali nè online sono state trovate informazioni utili.
   expected_output: >
     Un riassunto unico, conciso e focalizzato, che integra i risultati del RAG e della ricerca online
-    per rispondere in modo completo alla query dell’utente.
+    per rispondere in modo completo alla query dell’utente, mettendo in evidenza eventuali discrepanze nelle due fonti di informazioni.
+  context: 
+    - rag_task
+    - search_task
   agent: synthesizer_agent
   

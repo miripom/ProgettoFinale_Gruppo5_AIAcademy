@@ -93,10 +93,10 @@ class ChatbotFlow(Flow[ChatState]):
         # call RAG crew
         print(" Inside do_rag_and_search")
 
-        result = RagAndSearchCrew().crew().kickoff(inputs={"query": self.state.user_input})
-
-        print(result)
-        self.append_agent_response(result, "text")
+        rag_search_crew = RagAndSearchCrew().crew()
+        result = rag_search_crew.kickoff(inputs={"query": self.state.user_input})
+        
+        self.append_agent_response(rag_search_crew, "text")
         return "new_turn"
 
 

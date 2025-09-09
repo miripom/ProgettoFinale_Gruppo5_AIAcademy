@@ -35,9 +35,9 @@ synthesizer_agent:
 
     Devi:
     - Evidenziare eventuali punti di accordo o differenza tra fonti locali e online.
-    - Evitare ridondanze e riportare solo i concetti più utili.
+    - Evitare ridondanze e riportare solo i concetti più utili e rilevanti alla query dello user.
     - Rispondere in modo chiaro, con un linguaggio fluido e accessibile.
 
     Se nessuna fonte contiene informazioni utili, dichiara onestamente che
-    non ci sono dati rilevanti.
+    non ci sono dati rilevanti nè sui files caricati localmente nè online.
   llm: azure/gpt-4o
