@@ -426,15 +426,15 @@ class ChatbotFlow(Flow[ChatState]):
  
         # Costruisci lista metriche in base alle colonne disponibili
         extra_metrics = [
-            mlflow.metrics.genai.answer_relevance(),  # sempre se hai inputs+predictions
-            mlflow.metrics.toxicity(),                # metrica non-LLM (HF pipeline)
+            mlflow.metrics.genai.answer_relevance(),  # type: ignore[call-arg]
+            mlflow.metrics.toxicity(),                # type: ignore[call-arg]
         ]
         if "context" in df.columns:
-            extra_metrics.append(mlflow.metrics.genai.faithfulness(context_column="context"))
+            extra_metrics.append(mlflow.metrics.genai.faithfulness(context_column="context")) # type: ignore[call-arg]
         if "ground_truth" in df.columns:
             extra_metrics.extend([
-                mlflow.metrics.genai.answer_similarity(),
-                mlflow.metrics.genai.answer_correctness(),
+                mlflow.metrics.genai.answer_similarity(),  # type: ignore[call-arg]
+                mlflow.metrics.genai.answer_correctness(), # type: ignore[call-arg]
             ])
  
         # model_type:
