@@ -232,6 +232,19 @@ def get_embeddings(settings: RAG_Settings) -> AzureOpenAIEmbeddings:
     Returns:
         AzureOpenAIEmbeddings: Configured embeddings instance for text vectorization.
     """
+    saved_base = os.environ["AZURE_OPENAI_ENDPOINT"] or os.environ["AZURE_OPENAI_ENDPOINT"]
+    if saved_base:
+        del os.environ["AZURE_API_BASE"]
+        del os.environ["AZURE_OPENAI_ENDPOINT"]
+    embeddings = AzureOpenAIEmbeddings(
+        model="text-embedding-ada-002",
+        azure_deployment=os.environ["DEPLOYMENT_EMBEDDING"],
+        azure_endpoint=saved_base,
+        api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        )
+    if saved_base:
+        os.environ["AZURE_API_BASE"] = saved_base
+        os.environ["AZURE_OPENAI_ENDPOINT"] = saved_base
     return AzureOpenAIEmbeddings(model=settings.emb_model_name)
 
 
