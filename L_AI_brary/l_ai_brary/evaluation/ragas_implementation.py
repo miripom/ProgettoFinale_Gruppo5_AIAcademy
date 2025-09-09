@@ -22,7 +22,7 @@ sys.path.insert(0, parent_dir)
 sys.path.insert(0, src_dir)
 pd.set_option("display.max_columns", None)
 
-from utils.rag_utils import RAG_Settings, hybrid_search, build_rag_chain, get_llm, get_embeddings, format_docs_for_prompt, get_qdrant_client
+from l_ai_brary.utils.rag_utils import RAG_Settings, hybrid_search, build_rag_chain, get_llm, get_embeddings, format_docs_for_prompt, get_qdrant_client
 from typing import List
 from ragas import evaluate, EvaluationDataset
 from ragas.metrics import (

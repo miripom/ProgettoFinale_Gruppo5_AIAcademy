@@ -1,3 +1,23 @@
+"""L_AI_brary Streamlit Frontend Application.
+
+This module provides a Streamlit-based web interface for the L_AI_brary chatbot system.
+The application allows users to interact with the AI chatbot, upload PDF documents for
+indexing into the knowledge base, and manage conversation flow through an intuitive
+web interface.
+
+Features:
+    - Interactive chat interface with the L_AI_brary chatbot
+    - PDF upload and automatic indexing into Qdrant vector database
+    - Real-time conversation updates and auto-refresh
+    - Session state management for persistent chat history
+    - Background processing for PDF indexing
+    - Clean exit functionality
+
+Usage:
+    To run the application, navigate to the l_ai_brary directory and execute:
+    python -m streamlit run streamlit_frontend/app.py
+"""
+
 import os
 from pathlib import Path
 import time
@@ -9,26 +29,40 @@ from l_ai_brary.utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
 import threading
 
 def run_flow(flow: ChatbotFlow):
+    """Execute the ChatbotFlow in a separate thread.
+    
+    This function starts the CrewAI flow execution in a background thread,
+    allowing the Streamlit interface to remain responsive while the chatbot
+    processes user interactions and manages conversation flow.
+    
+    Args:
+        flow (ChatbotFlow): The initialized ChatbotFlow instance to execute.
+        
+    Note:
+        This function is designed to be run in a daemon thread to avoid
+        blocking the main Streamlit application thread.
+    """
     flow.kickoff()
 
 
+# =============================================================================
+# Application Configuration and Path Setup
+# =============================================================================
 FILE_PATH = os.path.abspath(__file__)       # streamlit_frontend/app.py
 FOLDER_PATH = os.path.dirname(FILE_PATH)    # streamlit_frontend
 
-# -----------------------------
-# Streamlit UI
+# =============================================================================
+# Streamlit UI Configuration and Initialization
+# =============================================================================
 # To run the app, navigate to the l_ai_brary directory and run:
-
 # python -m streamlit run streamlit_frontend/app.py
-# -----------------------------
-
 
 st.set_page_config(page_title="L_AI_brary", page_icon="📚", layout="wide")
 st.title("📚 L_AI_brary Chatbot")
 
-# -----------------------------
-# Initialize flow in session state
-# -----------------------------
+# =============================================================================
+# CrewAI Flow Initialization and Session State Management
+# =============================================================================
 
 # Initialize session state variables first
 if "last_refresh_time" not in st.session_state:
@@ -70,9 +104,9 @@ if (current_message_count > st.session_state.last_message_count and
     st.session_state.last_refresh_time = current_time
     st.rerun()
 
-# -----------------------------
-# Sidebar controls
-# -----------------------------
+# =============================================================================
+# Sidebar Controls and User Interface
+# =============================================================================
 st.sidebar.header("Controls")
 
 # Quit button in sidebar
@@ -81,10 +115,10 @@ if not st.session_state.crewai_flow.state.user_quit:
         st.session_state.crewai_flow.state.user_quit = True
         st.rerun()  # refresh UI immediately
 
-# -----------------------------
-# PDF upload and indexing
-# -----------------------------
-# Initialize session state variables
+
+# =============================================================================
+# PDF Upload and Knowledge Base Indexing
+# =============================================================================
 if "indexing_in_progress" not in st.session_state:
     st.session_state.indexing_in_progress = False
 if "indexed_files" not in st.session_state:
@@ -141,9 +175,9 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
 st.session_state.indexing_in_progress = False
 
 
-# -----------------------------
-# Show existing conversation
-# -----------------------------
+# =============================================================================
+# Chat History Display and Message Rendering
+# =============================================================================
 # Debug info
 st.sidebar.write(f"Messages count: {len(st.session_state.crewai_flow.state.chat_history)}")
 st.sidebar.write(f"User input: '{st.session_state.crewai_flow.state.user_input}'")
@@ -161,9 +195,9 @@ for msg in st.session_state.crewai_flow.state.chat_history:
             # Default case - just display content as text
             st.write(msg["content"])
 
-# -----------------------------
-# Chat input (only if not quit)
-# -----------------------------
+# =============================================================================
+# User Input Handling and Chat Interface
+# =============================================================================
 if not st.session_state.crewai_flow.state.user_quit:
     if not st.session_state.indexing_in_progress:
         user_msg = st.chat_input("Ask me about a book...")
@@ -177,9 +211,9 @@ if not st.session_state.crewai_flow.state.user_quit:
         st.info("Indexing in progress. Please wait...")
         # Don't auto-rerun during indexing to reduce overhead
 
-# -----------------------------
-# Goodbye message
-# -----------------------------
+# =============================================================================
+# Application Exit and Cleanup
+# =============================================================================
 if st.session_state.crewai_flow.state.user_quit:
     st.markdown(
         """
