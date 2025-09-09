@@ -99,7 +99,7 @@ if "last_message_count" not in st.session_state:
 current_time = time.time()
 current_message_count = len(st.session_state.crewai_flow.state.chat_history)
 if (current_message_count > st.session_state.last_message_count and 
-    current_time - st.session_state.last_refresh_time > 1.0):  # Minimum 1 second between refreshes
+    current_time - st.session_state.last_refresh_time > 0.5):  # Reduced from 1.0 to 0.5 for faster updates
     st.session_state.last_message_count = current_message_count
     st.session_state.last_refresh_time = current_time
     st.rerun()
@@ -162,9 +162,8 @@ if uploaded_file and uploaded_file.name not in st.session_state.indexed_files:
             )
             """
         except Exception as e:
-            st.session_state.indexed_files.remove(uploaded_file.name)
+            st.session_state.indexed_files.discard(uploaded_file.name)  # Use discard to avoid KeyError
             st.sidebar.error(f"❌ Error indexing {uploaded_file.name}: {e}")
-            st.session_state.indexed_files.remove(uploaded_file.name)
             st.session_state.indexing_in_progress = False
             st.stop()
 
@@ -204,6 +203,14 @@ if not st.session_state.crewai_flow.state.user_quit:
         if user_msg and user_msg.strip():  # Ensure non-empty message
             # Check if this is the same message to avoid duplicate processing
             if user_msg != st.session_state.get("last_user_message", ""):
+                # ✅ IMMEDIATELY add user message to chat history for instant display
+                st.session_state.crewai_flow.state.chat_history.append({
+                    "role": "user", 
+                    "content": user_msg
+                })
+                st.session_state.crewai_flow.state.messages_count += 1
+                
+                # Set the input for the flow to process
                 st.session_state.crewai_flow.state.user_input = user_msg
                 st.session_state.last_user_message = user_msg
                 st.rerun()

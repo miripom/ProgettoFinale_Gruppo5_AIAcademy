@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 import time
+from dotenv import load_dotenv
 from pathlib import Path
 from typing import Any, Iterable, List, Tuple, cast
 from dataclasses import dataclass
@@ -48,7 +49,7 @@ from qdrant_client.models import (
 )
 
 
-
+load_dotenv()
 @dataclass
 class RAG_Settings:
     """Configuration settings for the RAG pipeline.

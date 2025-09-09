@@ -1,7 +1,17 @@
 #!/usr/bin/env python
 """L_AI_brary Main Application Module.
 
-This module implements the main chatbot flow application for L_AI_brary, a literary
+This module implements the main chatbot flow application for L_AI        while self.state.user_input == "":
+            time.sleep(0.5)  # wait for user input to be set in Streamlit
+            if self.state.user_quit:
+                print(" User requested to quit. Exiting flow.")
+                return "quit_flow"
+        
+        if self.state.user_input:
+            print(f" Processing user input: {self.state.user_input}")
+            # ✅ DON'T add user message here - it's already added in Streamlit for immediate display
+            # self.append_user_message(self.state.user_input)  # REMOVED to prevent duplication
+            self.state.counts += 1iterary
 assistant that combines RAG (Retrieval-Augmented Generation), image generation,
 and content sanitization capabilities. The application uses CrewAI flows to orchestrate
 different AI agents and tools based on user input classification.
@@ -33,7 +43,7 @@ from crewai.flow.flow import Flow, start, router, listen, or_
 from l_ai_brary.crews.image_crew.image_crew import ImageCrew
 from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
 from l_ai_brary.crews.rag_and_search_crew.rag_and_search_crew import RagAndSearchCrew
- import threading
+import threading
  
 load_dotenv()  # take environment variables from .env.
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
@@ -135,9 +145,9 @@ class ChatbotFlow(Flow[ChatState]):
                 return "quit_flow"
        
         if self.state.user_input:
-            print(f" added input to chat history: {self.state.user_input}")
-            # Append user message
-            self.append_user_message(self.state.user_input)
+            print(f" Processing user input: {self.state.user_input}")
+            # ✅ DON'T add user message here - it's already added in Streamlit for immediate display
+            # self.append_user_message(self.state.user_input)  # REMOVED to prevent duplication
             self.state.counts += 1
         mlflow.log_param(f"user_query_{self.state.counts}", self.state.user_input)
         mlflow.log_metric("user_query_length_chars", len(self.state.user_input))
@@ -208,14 +218,11 @@ class ChatbotFlow(Flow[ChatState]):
         # Simple routing logic — later can be replaced by an LLM-based router
         if classification.lower() == "image":
             # self.append_agent_response(self.state.sanitized_result)
-            # self.append_agent_response(self.state.sanitized_result)
             return "image"
         elif classification.lower() == "rag_and_search":
             # self.append_agent_response(self.state.sanitized_result)
-            # self.append_agent_response(self.state.sanitized_result)
             return "rag_and_search"
         else:
-            self.append_agent_response(self.state.sanitized_result)
             self.append_agent_response(self.state.sanitized_result)
             return "new_turn"
 
@@ -251,8 +258,7 @@ class ChatbotFlow(Flow[ChatState]):
         duration = time.perf_counter() - started
         self.state.summary = str(result.raw)
         self.append_agent_response(self.state.summary, "text")
-        self.append_agent_response(self.state.summary, "text")
-#         Metriche/artefatti ricerca
+
         mlflow.log_metric("search_duration_seconds", duration)
         mlflow.log_metric("search_results_chars", len(self.state.summary))
         mlflow.log_metric("search_results_words", len(self.state.summary.split()))
