@@ -30,27 +30,44 @@ st.title("📚 L_AI_brary Chatbot")
 # Initialize flow in session state
 # -----------------------------
 
+# Initialize session state variables first
+if "last_refresh_time" not in st.session_state:
+    st.session_state.last_refresh_time = 0
+
 if "crewai_flow" not in st.session_state:
-    print("haven't started crewai flow yet")
+    print("🚀 Initializing CrewAI flow for the first time...")
     st.session_state.crewai_flow = ChatbotFlow()
+    st.session_state.flow_initialized = False
+    print("✅ CrewAI flow instance created")
+
+# Start the flow only once
+if not st.session_state.get("flow_initialized", False):
+    print("🔄 Starting CrewAI flow thread...")
     threading.Thread(target=run_flow, args=(st.session_state.crewai_flow,), daemon=True).start()
-    print("have started crewai flow")
+    st.session_state.flow_initialized = True
+    print("✅ CrewAI flow thread started")
 
 
-# Add this check right before your chat display loop
-if hasattr(st.session_state.crewai_flow.state, 'needs_refresh') and st.session_state.crewai_flow.state.needs_refresh:
-    st.session_state.crewai_flow.state.needs_refresh = False
-    st.rerun()
+# Add this check right before your chat display loop - with rate limiting
+if (hasattr(st.session_state.crewai_flow.state, 'needs_refresh') and 
+    st.session_state.crewai_flow.state.needs_refresh):
+    current_time = time.time()
+    if current_time - st.session_state.last_refresh_time > 0.5:  # Rate limit refreshes
+        st.session_state.crewai_flow.state.needs_refresh = False
+        st.session_state.last_refresh_time = current_time
+        st.rerun()
 
-# Add auto-refresh mechanism
+# Add auto-refresh mechanism with rate limiting
 if "last_message_count" not in st.session_state:
     st.session_state.last_message_count = 0
 
-
-# Check if chat history has new messages
+# Check if chat history has new messages (with rate limiting)
+current_time = time.time()
 current_message_count = len(st.session_state.crewai_flow.state.chat_history)
-if current_message_count > st.session_state.last_message_count:
+if (current_message_count > st.session_state.last_message_count and 
+    current_time - st.session_state.last_refresh_time > 1.0):  # Minimum 1 second between refreshes
     st.session_state.last_message_count = current_message_count
+    st.session_state.last_refresh_time = current_time
     st.rerun()
 
 # -----------------------------
@@ -67,10 +84,13 @@ if not st.session_state.crewai_flow.state.user_quit:
 # -----------------------------
 # PDF upload and indexing
 # -----------------------------
+# Initialize session state variables
 if "indexing_in_progress" not in st.session_state:
     st.session_state.indexing_in_progress = False
 if "indexed_files" not in st.session_state:
     st.session_state.indexed_files = set()
+if "last_user_message" not in st.session_state:
+    st.session_state.last_user_message = ""
 
 uploaded_file = st.sidebar.file_uploader("Upload a PDF", type=["pdf"])
 
@@ -147,12 +167,15 @@ for msg in st.session_state.crewai_flow.state.chat_history:
 if not st.session_state.crewai_flow.state.user_quit:
     if not st.session_state.indexing_in_progress:
         user_msg = st.chat_input("Ask me about a book...")
-        if user_msg:
-            st.session_state.crewai_flow.state.user_input = user_msg
-            st.rerun()
+        if user_msg and user_msg.strip():  # Ensure non-empty message
+            # Check if this is the same message to avoid duplicate processing
+            if user_msg != st.session_state.get("last_user_message", ""):
+                st.session_state.crewai_flow.state.user_input = user_msg
+                st.session_state.last_user_message = user_msg
+                st.rerun()
     else:
         st.info("Indexing in progress. Please wait...")
-        st.rerun()
+        # Don't auto-rerun during indexing to reduce overhead
 
 # -----------------------------
 # Goodbye message
@@ -167,7 +190,11 @@ if st.session_state.crewai_flow.state.user_quit:
         """,
         unsafe_allow_html=True
     )
+    st.stop()  # Stop execution instead of continuous rerun
 
-if not st.session_state.crewai_flow.state.user_quit:
-    time.sleep(.1)
+# Only refresh if there's active conversation and not quitting
+if (not st.session_state.crewai_flow.state.user_quit and 
+    len(st.session_state.crewai_flow.state.chat_history) > 0):
+    # Use a much longer delay and only refresh occasionally
+    time.sleep(2.0)  # Increased from 0.1 to 2.0 seconds
     st.rerun()

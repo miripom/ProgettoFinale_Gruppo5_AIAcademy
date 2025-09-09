@@ -12,7 +12,7 @@ from crewai.flow.flow import Flow, start, router, listen, or_
 from l_ai_brary.crews.image_crew.image_crew import ImageCrew
 from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
 from l_ai_brary.crews.rag_and_search_crew.rag_and_search_crew import RagAndSearchCrew
-
+import threading
 
 load_dotenv()  # take environment variables from .env.
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
@@ -81,8 +81,9 @@ class ChatbotFlow(Flow[ChatState]):
         query = self.state.user_input
 
 
-        sanitized_result = self.state.sanitizer_crew.kickoff(inputs={"user_input": query})
-        print(" SanitizeCrew result: ", sanitized_result)
+        result = self.state.sanitizer_crew.kickoff(inputs={"user_input": query})
+        self.state.sanitized_result = str(result.raw)
+        print(" SanitizeCrew result: ", self.state.sanitized_result)
 
         messages = [
             {
@@ -90,7 +91,7 @@ class ChatbotFlow(Flow[ChatState]):
                 "content": (
 
                     f"You are a binary classifier that routes user queries (after they have been sanitized) to the appropriate service."
-                    f"Analyze the sanitized query: '{sanitized_result}'; "
+                    f"Analyze the sanitized query: '{self.state.sanitized_result}'; "
                     f"If the sanitized query is asking for the generation of an image pertaining to the literary domain, return 'image' (without the '); "
                     f"If the sanitized query is asking for information about a book or about the literature domain in general, return 'rag_and_search' (without the ');"
                     f"If the sanitized query is asking for a new input from the user, as it doesn't pertain to the literary domain, return 'new_turn' (without the ');"
@@ -106,16 +107,14 @@ class ChatbotFlow(Flow[ChatState]):
         
         # Simple routing logic — later can be replaced by an LLM-based router
         if classification.lower() == "image":
-            self.append_agent_response(self.state.sanitized_result.raw)
+            # self.append_agent_response(self.state.sanitized_result)
             return "image"
         elif classification.lower() == "rag_and_search":
-            self.append_agent_response(self.state.sanitized_result)
+            # self.append_agent_response(self.state.sanitized_result)
             return "rag_and_search"
         else:
-            self.append_agent_response(self.state.sanitized_result.raw)
+            self.append_agent_response(self.state.sanitized_result)
             return "new_turn"
-
-
 
 
     @listen("rag_and_search")
@@ -129,14 +128,14 @@ class ChatbotFlow(Flow[ChatState]):
         result = self.state.rag_and_search_crew.kickoff(inputs={"query": self.state.user_input})
         duration = time.perf_counter() - started
         self.state.summary = str(result.raw)
-        self.append_agent_response(result, "text")
+        self.append_agent_response(self.state.summary, "text")
 #         Metriche/artefatti ricerca
         mlflow.log_metric("search_duration_seconds", duration)
         mlflow.log_metric("search_results_chars", len(self.state.summary))
         mlflow.log_metric("search_results_words", len(self.state.summary.split()))
         mlflow.log_metric("search_results_lines", self.state.summary.count("\n") + 1 if self.state.summary else 0)
         mlflow.log_text(self.state.summary, "search_summary.txt")   
-        return "new_turn"
+        return self.state
 
 
     @listen("image")
@@ -144,7 +143,7 @@ class ChatbotFlow(Flow[ChatState]):
     def generate_image(self):
         started = time.perf_counter()
         crew = ImageCrew().crew()
-        path = crew.kickoff(inputs={'topic': self.state.sanitized_result.raw})
+        path = crew.kickoff(inputs={'topic': self.state.sanitized_result})
 
         self.append_agent_response(path.raw, "image")
         duration = time.perf_counter() - started
@@ -165,31 +164,45 @@ class ChatbotFlow(Flow[ChatState]):
         print(f"🔍 Query: {self.state.user_input}\n")
         print(self.state.summary)
 
-        # --- LLM-as-a-judge con MLflow ---
-        try:
-            os.environ["OPENAI_API_BASE"] = "https://aiacademymainlucamaci.openai.azure.com/"
-            os.environ["openai_api_base"] = "https://aiacademymainlucamaci.openai.azure.com/"
+        # --- LLM-as-a-judge con MLflow --- 
+        # 🔥 Instead of blocking here, wrap evaluation in a thread
+        def background_eval(user_query, prediction, context, ground_truth):
+            try:
+                os.environ["OPENAI_API_BASE"] = "https://aiacademymainlucamaci.openai.azure.com/"
+                os.environ["openai_api_base"] = "https://aiacademymainlucamaci.openai.azure.com/"
 
-            os.environ["OPENAI_DEPLOYMENT_NAME"] = "gpt-4o"
-            os.environ["openai_deployment_name"] = "gpt-4o"
+                os.environ["OPENAI_DEPLOYMENT_NAME"] = "gpt-4o"
+                os.environ["openai_deployment_name"] = "gpt-4o"
 
-            os.environ["OPENAI_API_VERSION"] = "2024-12-01-preview"
-            os.environ["openai_api_version"] = "2024-12-01-preview"
+                os.environ["OPENAI_API_VERSION"] = "2024-12-01-preview"
+                os.environ["openai_api_version"] = "2024-12-01-preview"
 
-            eval_metrics = self._run_llm_judge_mlflow(
-                user_query=self.state.user_input,
-                prediction=self.state.summary,
-                context=self.state.context or None,              # opzionale
-                ground_truth=self.state.ground_truth or None,    # opzionale
-            )
-            # Salvo snapshot metriche anche come dict (facile da leggere)
-            if eval_metrics:
-                mlflow.log_dict(eval_metrics, "eval_metrics_snapshot.json")
-                mlflow.set_tag("llm_judge_status", "success")
-        except Exception as e:
-            mlflow.set_tag("llm_judge_status", f"failed:{type(e).__name__}")
-            mlflow.log_text(str(e), "llm_judge_error.txt")
+                eval_metrics = self._run_llm_judge_mlflow(
+                    user_query=user_query,
+                    prediction=prediction,
+                    context=context or None,
+                    ground_truth=ground_truth or None,
+                )
+                if eval_metrics:
+                    mlflow.log_dict(eval_metrics, "eval_metrics_snapshot.json")
+                    mlflow.set_tag("llm_judge_status", "success")
+            except Exception as e:
+                mlflow.set_tag("llm_judge_status", f"failed:{type(e).__name__}")
+                mlflow.log_text(str(e), "llm_judge_error.txt")
 
+        # 🔥 Start thread (non-blocking, daemon so it won’t hang shutdown)
+        threading.Thread(
+            target=background_eval,
+            args=(
+                self.state.user_input,
+                self.state.summary,
+                self.state.context,
+                self.state.ground_truth,
+            ),
+            daemon=True
+        ).start()
+
+        # 🔥 Immediately return to flow loop instead of waiting
         return "new_turn"
 
 
