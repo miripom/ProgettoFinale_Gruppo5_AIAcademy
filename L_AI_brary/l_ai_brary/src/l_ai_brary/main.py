@@ -346,6 +346,8 @@ class ChatbotFlow(Flow[ChatState]):
                 os.environ["OPENAI_API_VERSION"] = "2024-12-01-preview"
                 os.environ["openai_api_version"] = "2024-12-01-preview"
 
+                os.environ["openai_api_type"] = "azure"
+
                 eval_metrics = self._run_llm_judge_mlflow(
                     user_query=user_query,
                     prediction=prediction,
