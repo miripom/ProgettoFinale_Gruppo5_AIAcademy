@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 from random import randint
 import time
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from crewai import LLM
 from pydantic import BaseModel
 
 from crewai.flow.flow import Flow, start, router, listen
 
-from l_ai_brary.crews.pdf_crew.pdf_crew import PdfCrew
 from l_ai_brary.crews.image_crew.image_crew import ImageCrew
 from l_ai_brary.crews.sanitize_crew.sanitize_crew import SanitizeCrew
 from l_ai_brary.crews.rag_and_search_crew.rag_and_search_crew import RagAndSearchCrew
@@ -21,6 +20,11 @@ class ChatState(BaseModel):
     needs_refresh: bool = False  # Flag to indicate UI needs refresh
     user_quit: bool = False
 
+    # Mark these as ClassVar so Pydantic ignores them
+    LLMclassifier: ClassVar[LLM] = LLM(model='azure/gpt-4o')
+    sanitizer_crew: ClassVar = SanitizeCrew().crew()
+    image_crew: ClassVar = ImageCrew().crew()
+    rag_and_search_crew: ClassVar = RagAndSearchCrew().crew()
 
 class ChatbotFlow(Flow[ChatState]):
 
@@ -38,26 +42,29 @@ class ChatbotFlow(Flow[ChatState]):
             time.sleep(0.5)  # wait for user input to be set in Streamlit
             if self.state.user_quit:
                 print(" User requested to quit. Exiting flow.")
-                return None
+                return "quit_flow"
         
         if self.state.user_input:
             print(f" added input to chat history: {self.state.user_input}")
             # Append user message
             self.append_user_message(self.state.user_input)
         
-        return self.state
+        return "continue"
 
     @router(wait_for_input)
-    def route_user_input(self):
+    def route_user_input(self, quit_or_continue: str):
         """Decide what to do with the user query."""
         print(" Inside route_user_input")
         print(f"with query: {self.state.user_input}")
+
+        if quit_or_continue == "quit_flow":
+            return "quit_flow"
+
         query = self.state.user_input
 
-        sanitized_result = SanitizeCrew().crew().kickoff(inputs={"user_input": query})
+        sanitized_result = self.state.sanitizer_crew.kickoff(inputs={"user_input": query})
         print(" SanitizeCrew result: ", sanitized_result)
 
-        llm = LLM(model='azure/gpt-4o')
         messages = [
             {
                 "role": "system",
@@ -72,7 +79,7 @@ class ChatbotFlow(Flow[ChatState]):
             }
         ]
  
-        classification = llm.call(messages=messages)
+        classification = self.state.LLMclassifier.call(messages=messages)
         print('CLASSIFICATION: ', classification)
         
         # Simple routing logic — later can be replaced by an LLM-based router
@@ -93,10 +100,9 @@ class ChatbotFlow(Flow[ChatState]):
         # call RAG crew
         print(" Inside do_rag_and_search")
 
-        rag_search_crew = RagAndSearchCrew().crew()
-        result = rag_search_crew.kickoff(inputs={"query": self.state.user_input})
-        
-        self.append_agent_response(rag_search_crew, "text")
+        result = self.state.rag_and_search_crew.kickoff(inputs={"query": self.state.user_input})
+
+        self.append_agent_response(result, "text")
         return "new_turn"
 
 
@@ -106,7 +112,13 @@ class ChatbotFlow(Flow[ChatState]):
         print(" Inside generate_image")
         self.append_agent_response("[Generated Image]", "text") # TODO: change to "image" when image generation is implemented
         return "new_turn"
-
+    
+    @listen("quit_flow")
+    def quit_flow(self):
+        print(" Inside quit_flow")
+        self.append_agent_response("Goodbye!", "text")
+        return "end"
+    
 
     def append_agent_response(self, response: str | Any, type: Literal["text", "image", "md_file"] = "text"):
         self.state.assistant_response.append(response)

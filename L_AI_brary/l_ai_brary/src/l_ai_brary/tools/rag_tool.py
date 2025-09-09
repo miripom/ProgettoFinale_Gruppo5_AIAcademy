@@ -67,10 +67,14 @@ def ListQdrantCollectionsTool() -> str:
     try:
         s = RAG_Settings()
         client = get_qdrant_client(s)
-        collections = client.get_collections()
-        if not collections:
+        response = client.get_collections()
+
+        # Correct way: access `.collections` attribute
+        if not response.collections:
             return "Nessuna collezione trovata nel RAG."
-        collections = [coll.name for coll in collections.collections]
-        return "\n".join(collections)
+
+        names = [coll.name for coll in response.collections]
+        return "\n".join(names)
+
     except Exception as e:
         return f"Errore durante il recupero delle collezioni nel RAG: {str(e)}"
