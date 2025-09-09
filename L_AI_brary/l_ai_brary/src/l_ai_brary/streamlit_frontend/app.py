@@ -193,23 +193,28 @@ for msg in st.session_state.crewai_flow.state.chat_history:
 # =============================================================================
 # User Input Handling and Chat Interface
 # =============================================================================
+
+last_messager = st.session_state.crewai_flow.state.chat_history[-1]["role"] if st.session_state.crewai_flow.state.chat_history else "first_message"
 if not st.session_state.crewai_flow.state.user_quit:
     if not st.session_state.indexing_in_progress:
-        user_msg = st.chat_input("Ask me about a book...")
-        if user_msg and user_msg.strip():  # Ensure non-empty message
-            # Check if this is the same message to avoid duplicate processing
-            if user_msg != st.session_state.get("last_user_message", ""):
-                # ✅ IMMEDIATELY add user message to chat history for instant display
-                st.session_state.crewai_flow.state.chat_history.append({
-                    "role": "user", 
-                    "content": user_msg
-                })
-                st.session_state.crewai_flow.state.messages_count += 1
-                
-                # Set the input for the flow to process
-                st.session_state.crewai_flow.state.user_input = user_msg
-                st.session_state.last_user_message = user_msg
-                st.rerun()
+        if last_messager == "assistant" or last_messager == "first_message":
+            user_msg = st.chat_input("Ask me about a book...")
+            if user_msg and user_msg.strip():  # Ensure non-empty message
+                # Check if this is the same message to avoid duplicate processing
+                if user_msg != st.session_state.get("last_user_message", ""):
+                    # ✅ IMMEDIATELY add user message to chat history for instant display
+                    st.session_state.crewai_flow.state.chat_history.append({
+                        "role": "user", 
+                        "content": user_msg
+                    })
+                    st.session_state.crewai_flow.state.messages_count += 1
+                    
+                    # Set the input for the flow to process
+                    st.session_state.crewai_flow.state.user_input = user_msg
+                    st.session_state.last_user_message = user_msg
+                    st.rerun()
+        else:
+            st.info("🤖 The assistant is formulating a response. Please wait...")
     else:
         st.info("Indexing in progress. Please wait...")
         # Don't auto-rerun during indexing to reduce overhead
@@ -233,5 +238,5 @@ if st.session_state.crewai_flow.state.user_quit:
 if (not st.session_state.crewai_flow.state.user_quit and 
     len(st.session_state.crewai_flow.state.chat_history) > 0):
     # Use a much longer delay and only refresh occasionally
-    time.sleep(2.0)  # Increased from 0.1 to 2.0 seconds
+    time.sleep(5.0)  # Increased from 0.1 to 2.0 seconds
     st.rerun()
