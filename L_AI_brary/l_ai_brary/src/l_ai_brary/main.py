@@ -50,7 +50,7 @@ mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"
 mlflow.autolog()  # autolog per openai/langchain/crewai dove supportato
 mlflow.set_experiment("L_AI_brary")
 
-history_length = 10
+history_length = 5
  
 class ChatState(BaseModel):
     """State management model for the chatbot flow conversation.
@@ -191,7 +191,7 @@ class ChatbotFlow(Flow[ChatState]):
         query = self.state.user_input
 
 
-        result = self.state.sanitizer_crew.kickoff(inputs={"user_input": query, "chat_history_context": self.state.chat_history[:-history_length]})
+        result = self.state.sanitizer_crew.kickoff(inputs={"user_input": query, "chat_history_context": self.state.chat_history[-history_length:]})
         self.state.sanitized_result = str(result.raw)
         print(" SanitizeCrew result: ", self.state.sanitized_result)
 
@@ -255,7 +255,7 @@ class ChatbotFlow(Flow[ChatState]):
  
         print(" Inside do_rag_and_search")
  
-        result = self.state.rag_and_search_crew.kickoff(inputs={"query": self.state.user_input, "chat_history_context": self.state.chat_history[:-history_length]})
+        result = self.state.rag_and_search_crew.kickoff(inputs={"query": self.state.user_input, "chat_history_context": self.state.chat_history[-history_length:]})
         duration = time.perf_counter() - started
         self.state.summary = str(result.raw)
         self.append_agent_response(self.state.summary, "text")
@@ -292,7 +292,7 @@ class ChatbotFlow(Flow[ChatState]):
             returned to the user interface for display.
         """
         started = time.perf_counter()
-        path = self.state.image_crew.kickoff(inputs={'topic': self.state.sanitized_result, "chat_history_context": self.state.chat_history[:-history_length]})
+        path = self.state.image_crew.kickoff(inputs={'topic': self.state.sanitized_result, "chat_history_context": self.state.chat_history[-history_length:]})
 
         self.append_agent_response(path.raw, "image")
         duration = time.perf_counter() - started

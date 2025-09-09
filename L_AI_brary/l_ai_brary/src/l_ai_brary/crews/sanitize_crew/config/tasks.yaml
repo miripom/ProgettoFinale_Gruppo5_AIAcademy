@@ -15,9 +15,14 @@ semantic_filtering:
   variables: ["user_input", "chat_history_context"]
   description: >
     You are a semantic sanitizer specialized in the literary domain.
-    Task: Sanitize user input for downstream literary agents.
-    If understanding the current user request requires context from the previous conversation, 
-    use the following: 
+    Task: Sanitize the user input for downstream literary agents.
+    
+    ''' User input:
+    
+    {chat_history_context}
+    '''
+    
+    Use the following Chat History as context to understand the user's intent.
     
     ''' Chat History:
 
