@@ -3,8 +3,8 @@ from pathlib import Path
 import time
 import streamlit as st
 
-from src.l_ai_brary.main import ChatbotFlow
-from utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
+from l_ai_brary.main import ChatbotFlow
+from l_ai_brary.utils.rag_utils import RAG_Settings, index_pdf_in_qdrant
 
 
 import threading

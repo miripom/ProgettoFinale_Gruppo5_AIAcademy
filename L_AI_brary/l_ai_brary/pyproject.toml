@@ -7,7 +7,11 @@ requires-python = ">=3.10,<3.14"
 dependencies = [
     "crewai-tools>=0.69.0",
     "crewai[tools]>=0.177.0,<1.0.0",
+    "evaluate>=0.4.5",
+    "mlflow>=3.3.2",
     "streamlit>=1.49.1",
+    "torch>=2.8.0",
+    "transformers>=4.46.3",
 ]
 
 [project.scripts]
