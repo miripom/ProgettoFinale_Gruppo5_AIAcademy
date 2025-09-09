@@ -102,7 +102,7 @@ class ChatbotFlow(Flow[ChatState]):
 
         result = self.state.rag_and_search_crew.kickoff(inputs={"query": self.state.user_input})
 
-        self.append_agent_response(result, "text")
+        self.append_agent_response(result.raw, "text")
         return "new_turn"
 
 
